@@ -18,6 +18,13 @@ public class EventService {
 
     // 1. Ajouter un nouvel événement ou modifier un événement existant
     public Event saveEvent(Event event) {
+        // Si c'est une création (ID est null), on vérifie que la date est future
+        if (event.getId() == null) {
+            if (event.getDateDebut().isBefore(java.time.LocalDateTime.now())) {
+                throw new RuntimeException("La date de début doit être dans le futur !");
+            }
+        }
+
         // Si c'est une modification (l'ID existe déjà)
         if (event.getId() != null) {
             Event eventExistant = eventRepository.findById(event.getId()).orElse(null);
