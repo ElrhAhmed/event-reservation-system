@@ -32,7 +32,6 @@ public class Event {
     private EventCategory categorie;
 
     @NotNull
-    @Future(message = "La date doit être dans le futur")
     private LocalDateTime dateDebut;
 
     @NotNull
