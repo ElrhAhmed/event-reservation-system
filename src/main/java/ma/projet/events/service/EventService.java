@@ -16,8 +16,17 @@ public class EventService {
         this.eventRepository = eventRepository;
     }
 
-    // 1. Mettre un événement en rayon (Créer ou Modifier)
+    // 1. Ajouter un nouvel événement ou modifier un événement existant
     public Event saveEvent(Event event) {
+        // Si c'est une modification (l'ID existe déjà)
+        if (event.getId() != null) {
+            Event eventExistant = eventRepository.findById(event.getId()).orElse(null);
+
+            // Règle : Un événement TERMINE ne peut plus être modifié
+            if (eventExistant != null && eventExistant.getStatut() == EventStatus.TERMINE) {
+                throw new RuntimeException("Impossible de modifier un événement terminé !");
+            }
+        }
         return eventRepository.save(event);
     }
 
