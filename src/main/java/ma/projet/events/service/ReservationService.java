@@ -81,4 +81,26 @@ public class ReservationService {
     public List<Reservation> findUserReservations(Long userId) {
         return reservationRepository.findByUtilisateurId(userId);
     }
+
+    public void annulerReservation(Long reservationId, Long userId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new RuntimeException("Réservation introuvable"));
+
+        // Vérification de sécurité : Est-ce bien l'utilisateur qui annule sa propre réservation ?
+        // (Sauf si on est ADMIN, mais on gérera ça plus tard)
+        if (!reservation.getUtilisateur().getId().equals(userId)) {
+            throw new RuntimeException("Vous ne pouvez pas annuler la réservation de quelqu'un d'autre");
+        }
+
+        // Règle des 48h
+        LocalDateTime dateEvenement = reservation.getEvenement().getDateDebut();
+        LocalDateTime maintenant = LocalDateTime.now();
+
+        if (maintenant.plusHours(48).isAfter(dateEvenement)) {
+            throw new RuntimeException("Impossible d'annuler : L'événement a lieu dans moins de 48h !");
+        }
+
+        reservation.setStatut(ReservationStatus.ANNULEE);
+        reservationRepository.save(reservation);
+    }
 }
