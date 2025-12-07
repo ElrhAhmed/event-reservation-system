@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ma.projet.events.exception.BadRequestException;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+
+
 public class Event {
 
     @Id
@@ -59,8 +62,7 @@ public class Event {
     @JoinColumn(name = "organisateur_id")
     private User organisateur;
 
-    private LocalDateTime dateCreation;
-    private LocalDateTime dateModification;
+
 
     @PrePersist
     protected void onCreate() {
@@ -72,4 +74,24 @@ public class Event {
     protected void onUpdate() {
         dateModification = LocalDateTime.now();
     }
+
+
+    // AJOUTER ces champs :
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime dateCreation;
+    private LocalDateTime dateModification;
+
+
+
+    // ❌ AJOUTER validation : dateFin doit être après dateDebut
+// Dans la méthode ou avec un validateur personnalisé
+    public void setDateFin(LocalDateTime dateFin) {
+        if (dateFin != null && dateDebut != null && dateFin.isBefore(dateDebut)) {
+            throw new BadRequestException("La date de fin doit être après la date de début");
+        }
+        this.dateFin = dateFin;
+    }
+
+
 }
