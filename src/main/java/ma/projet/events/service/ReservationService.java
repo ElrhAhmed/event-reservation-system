@@ -399,6 +399,7 @@ public class ReservationService {
 
         double totalRevenue = reservations.stream()
                 .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
+                .filter(r -> r.getMontantTotal() != null)
                 . mapToDouble(Reservation::getMontantTotal)
                 .sum();
         stats.put("totalRevenue", totalRevenue);
