@@ -535,13 +535,15 @@ class ReservationServiceTest {
         resa1.setEvenement(eventPublie);
         resa1.setStatut(ReservationStatus. CONFIRMEE);
         resa1.setNombrePlaces(5);
+        resa1.setMontantTotal(250.0);
 
         Reservation resa2 = new Reservation();
         resa2.setEvenement(eventPublie);
         resa2.setStatut(ReservationStatus.CONFIRMEE);
         resa2.setNombrePlaces(3);
+        resa2.setMontantTotal(150.0);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(client));
+
         when(eventRepository.findById(1L)).thenReturn(Optional.of(eventPublie));
         when(reservationRepository. findByEvenementId(1L))
                 .thenReturn(Arrays.asList(resa1, resa2));
@@ -596,7 +598,7 @@ class ReservationServiceTest {
             reservationService.confirmReservation(1L);
         });
 
-        assertTrue(exception.getMessage(). contains("déjà confirmée") ||
+        assertTrue(exception.getMessage(). contains("en attente") ||
                 exception.getMessage().contains("EN_ATTENTE"));
         verify(reservationRepository, never()).save(any());
     }
@@ -631,7 +633,7 @@ class ReservationServiceTest {
         assertEquals("Confirmée", recap.get("statutLabel"));
         assertNotNull(recap.get("dateReservation"));
         assertNotNull(recap.get("clientName"));
-        assertTrue(recap.get("annulable") instanceof Boolean);
+        assertTrue(recap.get("isAnnulable") instanceof Boolean);
     }
 }
 
