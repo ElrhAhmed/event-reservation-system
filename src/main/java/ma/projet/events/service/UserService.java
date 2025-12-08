@@ -28,27 +28,61 @@ public class UserService {
     // ==================== MÉTHODES DE BASE (déjà existantes) ====================
 
     /**
-     * Créer un nouvel utilisateur (inscription)
+     * Inscription d'un nouvel utilisateur
+     * Valide l'email, le mot de passe et les champs obligatoires
+     *
+     * @param user Utilisateur à inscrire
+     * @return L'utilisateur créé
+     * @throws ConflictException Si l'email existe déjà
+     * @throws BusinessException Si validation échoue
      */
     @Transactional
-    public User createUser(User user) {
-        // Vérifier que l'email n'existe pas déjà
-        if (userRepository.findByEmail(user.getEmail()). isPresent()) {
-            throw new ConflictException("Un utilisateur avec cet email existe déjà");
+    public User register(User user) {
+        // 1. Vérifier que l'email n'existe pas déjà
+        if (userRepository. findByEmail(user.getEmail()).isPresent()) {
+            throw new ConflictException("Cet email est déjà utilisé");
         }
 
-        // Par défaut : rôle CLIENT et compte actif
+        // 2. Valider le format de l'email
+        if (user.getEmail() == null ||
+                !user.getEmail().contains("@") ||
+                !user.getEmail().contains(".")) {
+            throw new BusinessException("Format d'email invalide");
+        }
+
+        // 3.  Valider la longueur du mot de passe (minimum 8 caractères)
+        if (user.getPassword() == null || user.getPassword().length() < 8) {
+            throw new BusinessException("Le mot de passe doit contenir au moins 8 caractères");
+        }
+
+        // 4. Valider les champs obligatoires
+        if (user.getNom() == null || user.getNom().isBlank()) {
+            throw new BusinessException("Le nom est obligatoire");
+        }
+        if (user.getPrenom() == null || user.getPrenom(). isBlank()) {
+            throw new BusinessException("Le prénom est obligatoire");
+        }
+
+        // 5. Initialiser les valeurs par défaut
         if (user.getRole() == null) {
             user.setRole(Role.CLIENT);
         }
         if (user.getActif() == null) {
             user.setActif(true);
         }
+        if (user.getDateInscription() == null) {
+            user. setDateInscription(LocalDateTime.now());
+        }
 
         // TODO : Plus tard, hasher le mot de passe avec BCrypt
-        // user.setPassword(passwordEncoder.encode(user. getPassword()));
+        // user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        return userRepository.save(user);
+        // 6.  Sauvegarder
+        User savedUser = userRepository.save(user);
+
+        System.out.println("✅ Nouvel utilisateur inscrit : " + savedUser.getEmail());
+
+        return savedUser;
     }
 
     /**

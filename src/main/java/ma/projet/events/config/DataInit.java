@@ -5,6 +5,7 @@ import ma.projet.events.repository.EventRepository;
 import ma.projet.events.repository.ReservationRepository;
 import ma.projet.events.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder; // Important pour le hash
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.util.Random;
 import java.util.UUID;
 
 @Component
+@Profile("!test")
 public class DataInit implements CommandLineRunner {
 
     private final UserRepository userRepository;

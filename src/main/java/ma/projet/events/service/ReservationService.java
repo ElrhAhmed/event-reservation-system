@@ -225,6 +225,10 @@ public class ReservationService {
      * Obtenir toutes les réservations d'un utilisateur
      */
     public List<Reservation> findUserReservations(Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Utilisateur introuvable avec l'ID : " + userId
+                ));
         return reservationRepository.findByUtilisateurId(userId);
     }
 
@@ -357,5 +361,48 @@ public class ReservationService {
         } while (reservationRepository.findByCodeReservation(code).isPresent());
 
         return code;
+    }
+
+    /**
+     * Statistiques des réservations pour un événement spécifique
+     *
+     * @param eventId ID de l'événement
+     * @return Map contenant les statistiques
+     */
+    public Map<String, Object> getReservationStatisticsByEvent(Long eventId) {
+        // Vérifier que l'événement existe
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Événement introuvable"));
+
+        List<Reservation> reservations = reservationRepository.findByEvenementId(eventId);
+
+        Map<String, Object> stats = new HashMap<>();
+        stats. put("eventId", eventId);
+        stats.put("eventTitle", event.getTitre());
+        stats.put("totalReservations", reservations.size());
+
+        long confirmed = reservations.stream()
+                .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
+                .count();
+        stats.put("reservationsConfirmees", confirmed);
+
+        long cancelled = reservations.stream()
+                .filter(r -> r.getStatut() == ReservationStatus.ANNULEE)
+                .count();
+        stats.put("reservationsAnnulees", cancelled);
+
+        int totalPlaces = reservations.stream()
+                .filter(r -> r.getStatut() == ReservationStatus. CONFIRMEE)
+                .mapToInt(Reservation::getNombrePlaces)
+                .sum();
+        stats.put("totalPlaces", totalPlaces);
+
+        double totalRevenue = reservations.stream()
+                .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
+                . mapToDouble(Reservation::getMontantTotal)
+                .sum();
+        stats.put("totalRevenue", totalRevenue);
+
+        return stats;
     }
 }

@@ -411,4 +411,161 @@ class UserServiceTest {
         assertEquals(1, clients.size());
         assertEquals(Role.CLIENT, clients.get(0).getRole());
     }
+
+    // ==================== TESTS register() (INSCRIPTION) ====================
+
+    @Test
+    @DisplayName("✅ Doit créer un nouvel utilisateur avec succès")
+    void testRegister_Success() {
+        // ARRANGE
+        User newUser = new User();
+        newUser.setNom("Nouveau");
+        newUser.setPrenom("Utilisateur");
+        newUser.setEmail("nouveau@test.com");
+        newUser. setPassword("password123");
+        newUser.setRole(Role.CLIENT);
+
+        when(userRepository.findByEmail("nouveau@test.com")). thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))). thenAnswer(invocation -> {
+            User savedUser = invocation.getArgument(0);
+            savedUser.setId(10L);
+            savedUser.setActif(true);
+            savedUser.setDateInscription(LocalDateTime.now());
+            return savedUser;
+        });
+
+        // ACT
+        User result = userService.register(newUser);
+
+        // ASSERT
+        assertNotNull(result);
+        assertNotNull(result.getId());
+        assertEquals("nouveau@test.com", result.getEmail());
+        assertTrue(result.isActif());
+        assertNotNull(result.getDateInscription());
+        verify(userRepository, times(1)). save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("❌ Doit rejeter si l'email existe déjà")
+    void testRegister_EmailAlreadyExists() {
+        // ARRANGE
+        User newUser = new User();
+        newUser. setEmail("client@test.com"); // Email déjà pris
+
+        when(userRepository.findByEmail("client@test.com")). thenReturn(Optional.of(client));
+
+        // ACT & ASSERT
+        ConflictException exception = assertThrows(ConflictException.class, () -> {
+            userService. register(newUser);
+        });
+
+        assertTrue(exception.getMessage().contains("déjà utilisé") ||
+                exception.getMessage().contains("existe déjà"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("❌ Doit rejeter si l'email est invalide")
+    void testRegister_InvalidEmail() {
+        // ARRANGE
+        User newUser = new User();
+        newUser.setNom("Test");
+        newUser.setPrenom("User");
+        newUser.setEmail("email-invalide"); // Pas de @
+        newUser.setPassword("password123");
+
+        // ACT & ASSERT
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            userService.register(newUser);
+        });
+
+        assertTrue(exception.getMessage().contains("email") ||
+                exception.getMessage(). contains("invalide"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("❌ Doit rejeter si le mot de passe est trop court")
+    void testRegister_PasswordTooShort() {
+        // ARRANGE
+        User newUser = new User();
+        newUser.setNom("Test");
+        newUser.setPrenom("User");
+        newUser. setEmail("test@test.com");
+        newUser.setPassword("short"); // < 8 caractères
+
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.empty());
+
+        // ACT & ASSERT
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            userService. register(newUser);
+        });
+
+        assertTrue(exception.getMessage(). contains("8 caractères"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("❌ Doit rejeter si des champs obligatoires manquent")
+    void testRegister_MissingFields() {
+        // ARRANGE - User sans nom
+        User newUser = new User();
+        newUser.setPrenom("User");
+        newUser.setEmail("test@test.com");
+        newUser.setPassword("password123");
+
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.empty());
+
+        // ACT & ASSERT
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            userService. register(newUser);
+        });
+
+        assertTrue(exception.getMessage(). contains("obligatoire") ||
+                exception.getMessage().contains("requis") ||
+                exception.getMessage().contains("manquant"));
+        verify(userRepository, never()).save(any());
+    }
+
+// ==================== TESTS ADDITIONNELS pour searchUsers() ====================
+
+    @Test
+    @DisplayName("✅ Doit pouvoir filtrer par statut actif")
+    void testSearchUsers_FilterActif() {
+        // ARRANGE
+        client.setActif(true);
+        organisateur.setActif(false);
+
+        when(userRepository.findById(2L)).thenReturn(Optional. of(admin));
+        when(userRepository. findAll()).thenReturn(Arrays.asList(client, admin, organisateur));
+
+        // ACT - Recherche avec filtre "actif" dans le mot-clé
+        List<User> results = userService.searchUsers("", 2L);
+        List<User> actifs = results.stream()
+                .filter(User::isActif)
+                . collect(java.util.stream.Collectors. toList());
+
+        // ASSERT
+        assertEquals(2, actifs.size()); // client et admin sont actifs
+        assertTrue(actifs.stream().allMatch(User::isActif));
+    }
+
+    @Test
+    @DisplayName("✅ Doit combiner recherche et filtre par rôle")
+    void testSearchUsers_CombinedFilters() {
+        // ARRANGE
+        when(userRepository.findById(2L)).thenReturn(Optional. of(admin));
+        when(userRepository.findAll()).thenReturn(Arrays.asList(client, admin, organisateur));
+
+        // ACT - Filtrer CLIENT avec "Test" dans le nom
+        List<User> clients = userService.getUsersByRole(Role.CLIENT, 2L);
+        List<User> results = clients.stream()
+                . filter(u -> u.getPrenom().toLowerCase().contains("test"))
+                .collect(java. util.stream.Collectors.toList());
+
+        // ASSERT
+        assertEquals(1, results.size());
+        assertEquals(Role.CLIENT, results.get(0).getRole());
+    }
 }

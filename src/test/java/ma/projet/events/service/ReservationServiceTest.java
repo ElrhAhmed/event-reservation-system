@@ -430,4 +430,208 @@ class ReservationServiceTest {
                 () -> reservationService.getReservationByCode("EVT-99999")
         );
     }
+
+    // ==================== TESTS getReservationsByUser() ====================
+
+    @Test
+    @DisplayName("✅ Doit récupérer toutes les réservations d'un utilisateur")
+    void testGetReservationsByUser_Success() {
+        // ARRANGE
+        Reservation resa1 = new Reservation();
+        resa1.setId(1L);
+        resa1.setUtilisateur(client);
+        resa1.setCodeReservation("EVT-11111");
+        resa1.setStatut(ReservationStatus. CONFIRMEE);
+
+        Reservation resa2 = new Reservation();
+        resa2.setId(2L);
+        resa2.setUtilisateur(client);
+        resa2.setCodeReservation("EVT-22222");
+        resa2.setStatut(ReservationStatus.ANNULEE);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(reservationRepository.findByUtilisateurId(1L))
+                .thenReturn(Arrays.asList(resa1, resa2));
+
+        // ACT
+        List<Reservation> results = reservationService.findUserReservations(1L);
+
+        // ASSERT
+        assertNotNull(results);
+        assertEquals(2, results.size());
+        assertTrue(results.stream().allMatch(r -> r.getUtilisateur().equals(client)));
+        verify(reservationRepository, times(1)).findByUtilisateurId(1L);
+    }
+
+    @Test
+    @DisplayName("✅ Doit retourner liste vide si aucune réservation")
+    void testGetReservationsByUser_Empty() {
+        // ARRANGE
+        when(userRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(reservationRepository.findByUtilisateurId(1L))
+                .thenReturn(Collections.emptyList());
+
+        // ACT
+        List<Reservation> results = reservationService.findUserReservations(1L);
+
+        // ASSERT
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    @DisplayName("❌ Doit lancer exception si utilisateur introuvable")
+    void testGetReservationsByUser_UserNotFound() {
+        // ARRANGE
+        when(userRepository. findById(99L)).thenReturn(Optional. empty());
+
+        // ACT & ASSERT
+        assertThrows(ResourceNotFoundException.class, () -> {
+            reservationService.findUserReservations(99L);
+        });
+    }
+
+// ==================== TESTS getReservationStatistics() ====================
+
+    @Test
+    @DisplayName("✅ Doit calculer les statistiques globales des réservations")
+    void testGetReservationStatistics() {
+        // ARRANGE
+        Reservation resa1 = new Reservation();
+        resa1.setStatut(ReservationStatus. CONFIRMEE);
+        resa1.setNombrePlaces(3);
+        resa1.setMontantTotal(150.0);
+
+        Reservation resa2 = new Reservation();
+        resa2.setStatut(ReservationStatus.CONFIRMEE);
+        resa2. setNombrePlaces(5);
+        resa2.setMontantTotal(250.0);
+
+        Reservation resa3 = new Reservation();
+        resa3. setStatut(ReservationStatus.ANNULEE);
+        resa3.setNombrePlaces(2);
+        resa3.setMontantTotal(100.0);
+
+        when(reservationRepository.findAll())
+                .thenReturn(Arrays.asList(resa1, resa2, resa3));
+
+        // ACT
+        Map<String, Object> stats = reservationService.getReservationStatistics();
+
+        // ASSERT
+        assertNotNull(stats);
+        assertEquals(3, (Integer) stats.get("totalReservations"));
+        assertEquals(2L, (Long) stats.get("confirmedReservations"));
+        assertEquals(1L, (Long) stats.get("cancelledReservations"));
+        assertEquals(0L, (Long) stats.get("pendingReservations"));
+        assertEquals(400.0, (Double) stats. get("totalRevenue"), 0.01); // 150 + 250
+    }
+
+    @Test
+    @DisplayName("✅ Doit calculer stats par événement")
+    void testGetReservationStatisticsByEvent() {
+        // ARRANGE
+        Reservation resa1 = new Reservation();
+        resa1.setEvenement(eventPublie);
+        resa1.setStatut(ReservationStatus. CONFIRMEE);
+        resa1.setNombrePlaces(5);
+
+        Reservation resa2 = new Reservation();
+        resa2.setEvenement(eventPublie);
+        resa2.setStatut(ReservationStatus.CONFIRMEE);
+        resa2.setNombrePlaces(3);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(eventPublie));
+        when(reservationRepository. findByEvenementId(1L))
+                .thenReturn(Arrays.asList(resa1, resa2));
+
+        // ACT
+        Map<String, Object> stats = reservationService.getReservationStatisticsByEvent(1L);
+
+        // ASSERT
+        assertNotNull(stats);
+        assertEquals(2, (Integer) stats.get("totalReservations"));
+        assertEquals(8, (Integer) stats.get("totalPlaces"));
+        assertEquals(2L, (Long) stats.get("reservationsConfirmees"));
+    }
+
+// ==================== TESTS confirmReservation() (si applicable) ====================
+
+    @Test
+    @DisplayName("✅ Doit confirmer une réservation EN_ATTENTE")
+    void testConfirmReservation_Success() {
+        // ARRANGE
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation. setUtilisateur(client);
+        reservation.setEvenement(eventPublie);
+        reservation.setStatut(ReservationStatus.EN_ATTENTE);
+        reservation.setCodeReservation("EVT-12345");
+
+        when(reservationRepository.findById(1L)). thenReturn(Optional.of(reservation));
+        when(reservationRepository.save(any(Reservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // ACT
+        Reservation result = reservationService.confirmReservation(1L);
+
+        // ASSERT
+        assertEquals(ReservationStatus.CONFIRMEE, result.getStatut());
+        verify(reservationRepository, times(1)).save(any(Reservation.class));
+    }
+
+    @Test
+    @DisplayName("❌ Doit rejeter si déjà confirmée")
+    void testConfirmReservation_AlreadyConfirmed() {
+        // ARRANGE
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setStatut(ReservationStatus. CONFIRMEE);
+
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+
+        // ACT & ASSERT
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            reservationService.confirmReservation(1L);
+        });
+
+        assertTrue(exception.getMessage(). contains("déjà confirmée") ||
+                exception.getMessage().contains("EN_ATTENTE"));
+        verify(reservationRepository, never()).save(any());
+    }
+
+// ==================== TESTS generateRecapitulatif() ====================
+
+    @Test
+    @DisplayName("✅ Doit générer un récapitulatif complet")
+    void testGenerateRecapitulatif_Success() {
+        // ARRANGE
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setCodeReservation("EVT-12345");
+        reservation.setUtilisateur(client);
+        reservation.setEvenement(eventPublie);
+        reservation.setNombrePlaces(3);
+        reservation.setMontantTotal(150.0);
+        reservation.setStatut(ReservationStatus. CONFIRMEE);
+        reservation.setDateReservation(LocalDateTime.now());
+
+        when(reservationRepository. findById(1L)).thenReturn(Optional.of(reservation));
+
+        // ACT
+        Map<String, Object> recap = reservationService.getReservationSummary(1L);
+
+        // ASSERT
+        assertNotNull(recap);
+        assertEquals("EVT-12345", recap.get("code"));
+        assertEquals("Concert Test", recap.get("eventTitle"));
+        assertEquals(3, recap.get("nombrePlaces"));
+        assertEquals(150.0, (Double) recap.get("montantTotal"), 0.01);
+        assertEquals("Confirmée", recap.get("statutLabel"));
+        assertNotNull(recap.get("dateReservation"));
+        assertNotNull(recap.get("clientName"));
+        assertTrue(recap.get("annulable") instanceof Boolean);
+    }
 }
+

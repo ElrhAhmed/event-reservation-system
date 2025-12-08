@@ -26,21 +26,25 @@ public class EventService {
         this.reservationRepository = reservationRepository;
     }
 
-    // ==================== MÉTHODES DE BASE (déjà existantes) ====================
 
-    /**
-     * Créer un nouvel événement
-     */
     @Transactional
     public Event createEvent(Event event, Long organisateurId) {
         User organisateur = userRepository.findById(organisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException("Organisateur introuvable"));
 
+        // ✅ AJOUTER : Vérification du rôle
+        if (! organisateur.isOrganizer() && !organisateur.isAdmin()) {
+            throw new UnauthorizedException(
+                    "Seuls les organisateurs et administrateurs peuvent créer des événements"
+            );
+        }
+
         event.setOrganisateur(organisateur);
-        event.setStatut(EventStatus.BROUILLON); // Par défaut en brouillon
+        event.setStatut(EventStatus.BROUILLON);
 
         return eventRepository.save(event);
     }
+
 
     /**
      * Récupérer tous les événements
@@ -79,17 +83,23 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Événement introuvable"));
 
-        // Vérifier les droits
-        if (!event. getOrganisateur().getId(). equals(userId)) {
-            throw new UnauthorizedException("Vous n'avez pas les droits pour modifier cet événement");
+        // ✅ AJOUTER : Récupérer l'utilisateur
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
+
+        // ✅ MODIFIER : Autoriser organisateur OU admin
+        if (!event. getOrganisateur().getId(). equals(userId) && !user. isAdmin()) {
+            throw new UnauthorizedException(
+                    "Seul le créateur ou un administrateur peut modifier cet événement"
+            );
         }
 
         // Vérifier que l'événement est modifiable
-        if (! event.isModifiable()) {
+        if (!event.isModifiable()) {
             throw new BusinessException("Un événement terminé ne peut pas être modifié");
         }
 
-        // Mettre à jour les champs
+        // Mettre à jour les champs (code existant)
         if (updatedEvent.getTitre() != null) {
             event.setTitre(updatedEvent.getTitre());
         }
@@ -430,20 +440,20 @@ public class EventService {
             String ville,
             LocalDateTime dateMin,
             LocalDateTime dateMax,
+            String lieu,
             Double prixMin,
             Double prixMax
     ) {
-        // Partir de tous les événements publiés
-        List<Event> events = eventRepository.findByStatut(EventStatus.PUBLIE);
+        List<Event> events = eventRepository. findByStatut(EventStatus.PUBLIE);
 
-        // Appliquer les filtres avec Streams
         return events.stream()
                 .filter(e -> categorie == null || e.getCategorie().equals(categorie))
-                .filter(e -> ville == null || e.getVille(). equalsIgnoreCase(ville))
+                .filter(e -> ville == null || e.getVille().equalsIgnoreCase(ville))
                 .filter(e -> dateMin == null || e.getDateDebut().isAfter(dateMin))
-                .filter(e -> dateMax == null || e.getDateDebut().isBefore(dateMax))
-                .filter(e -> prixMin == null || e. getPrixUnitaire() >= prixMin)
+                .filter(e -> dateMax == null || e. getDateDebut().isBefore(dateMax))
+                .filter(e -> lieu == null || e.getLieu(). toLowerCase().contains(lieu.toLowerCase())) // ✅ AJOUTER
+                .filter(e -> prixMin == null || e.getPrixUnitaire() >= prixMin)
                 .filter(e -> prixMax == null || e.getPrixUnitaire() <= prixMax)
-                . collect(Collectors.toList());
+                .collect(Collectors.toList());
     }
 }

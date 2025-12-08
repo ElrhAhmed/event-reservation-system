@@ -378,7 +378,7 @@ class EventServiceTest {
 
         // ACT
         List<Event> results = eventService.searchWithFilters(
-                EventCategory.CONCERT, null, null, null, null, null
+                EventCategory.CONCERT, null, null, null, null, null, null
         );
 
         // ASSERT
@@ -403,8 +403,7 @@ class EventServiceTest {
 
         // ACT
         List<Event> results = eventService.searchWithFilters(
-                null, "Casablanca", null, null, null, null
-        );
+                null, "Casablanca", null, null, null, null, null );
 
         // ASSERT
         assertEquals(1, results.size());
@@ -428,7 +427,7 @@ class EventServiceTest {
 
         // ACT
         List<Event> results = eventService.searchWithFilters(
-                null, null, null, null, null, 100.0
+                null, null, null, null, null, 100.0, null
         );
 
         // ASSERT
