@@ -427,7 +427,7 @@ class EventServiceTest {
 
         // ACT
         List<Event> results = eventService.searchWithFilters(
-                null, null, null, null, null, 100.0, null
+                null, null, null, null, null, null, 100.0
         );
 
         // ASSERT
