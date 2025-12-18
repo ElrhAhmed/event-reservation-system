@@ -1,0 +1,246 @@
+/* ============================================
+   FESTIVENT - Design System
+   Thème Vaadin 24. 9.6 (Lumo)
+   Package: ma.projet.events
+   ============================================ */
+
+/* ------------------------------------
+   1.  IMPORT DE LA FONT INTER
+   ------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ------------------------------------
+   2. VARIABLES CSS GLOBALES
+   ------------------------------------ */
+html {
+    /* ========== COULEURS PRINCIPALES FESTIVENT ========== */
+
+    /* Primary - Bleu principal */
+    --festivent-primary:  #2563EB;
+    --festivent-primary-dark: #1E40AF;
+    --festivent-primary-light: #3B82F6;
+
+    /* Accent - Orange */
+    --festivent-accent: #F97316;
+    --festivent-accent-dark: #EA580C;
+    --festivent-accent-light: #FB923C;
+
+    /* Background */
+    --festivent-bg: #F8FAFC;
+    --festivent-bg-card: #FFFFFF;
+
+    /* Texte */
+    --festivent-text-primary: #0F172A;
+    --festivent-text-secondary: #64748B;
+    --festivent-text-tertiary: #94A3B8;
+
+    /* États généraux */
+    --festivent-success: #16A34A;
+    --festivent-success-light: #22C55E;
+    --festivent-error: #DC2626;
+    --festivent-error-light: #EF4444;
+    --festivent-warning: #F59E0B;
+    --festivent-info: #0EA5E9;
+
+    /* ========== COULEURS STATUTS (alignées avec tes Enums) ========== */
+
+    /* EventStatus.java */
+    --festivent-status-brouillon: #FFA500;
+    --festivent-status-publie: #28A745;
+    --festivent-status-annule: #DC3545;
+    --festivent-status-termine: #6C757D;
+
+    /* ReservationStatus.java */
+    --festivent-status-attente: #FFC107;
+    --festivent-status-confirmee: #28A745;
+    --festivent-status-annulee: #DC3545;
+
+    /* Bordures */
+    --festivent-border:  #E2E8F0;
+    --festivent-border-hover: #CBD5E1;
+
+    /* ========== OVERRIDE DES VARIABLES LUMO ========== */
+
+    /* Couleur principale Vaadin */
+    --lumo-primary-color: var(--festivent-primary);
+    --lumo-primary-color-50pct: rgba(37, 99, 235, 0.5);
+    --lumo-primary-color-10pct: rgba(37, 99, 235, 0.1);
+    --lumo-primary-text-color: var(--festivent-primary);
+
+    /* Couleur d'erreur */
+    --lumo-error-color: var(--festivent-error);
+    --lumo-error-color-50pct:  rgba(220, 38, 38, 0.5);
+    --lumo-error-color-10pct: rgba(220, 38, 38, 0.1);
+
+    /* Couleur de succès */
+    --lumo-success-color: var(--festivent-success);
+    --lumo-success-color-50pct: rgba(22, 163, 74, 0.5);
+    --lumo-success-color-10pct: rgba(22, 163, 74, 0.1);
+
+    /* Background */
+    --lumo-base-color: var(--festivent-bg-card);
+    --lumo-tint-5pct: rgba(15, 23, 42, 0.05);
+    --lumo-tint-10pct: rgba(15, 23, 42, 0.1);
+    --lumo-shade-5pct: rgba(15, 23, 42, 0.05);
+    --lumo-shade-10pct: rgba(15, 23, 42, 0.1);
+
+    /* Texte */
+    --lumo-body-text-color: var(--festivent-text-primary);
+    --lumo-secondary-text-color: var(--festivent-text-secondary);
+    --lumo-tertiary-text-color: var(--festivent-text-tertiary);
+
+    /* Bordures */
+    --lumo-contrast-10pct: var(--festivent-border);
+
+    /* Rayons de bordure */
+    --lumo-border-radius-s: 4px;
+    --lumo-border-radius-m: 8px;
+    --lumo-border-radius-l: 12px;
+
+    /* Espacements */
+    --lumo-space-xs: 0.25rem;  /* 4px */
+    --lumo-space-s: 0.5rem;    /* 8px */
+    --lumo-space-m: 1rem;      /* 16px */
+    --lumo-space-l: 1.5rem;    /* 24px */
+    --lumo-space-xl:  2rem;     /* 32px */
+
+    /* Typographie */
+    --lumo-font-family:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --lumo-font-size-xs: 0.75rem;   /* 12px */
+    --lumo-font-size-s: 0.875rem;   /* 14px */
+    --lumo-font-size-m: 1rem;       /* 16px */
+    --lumo-font-size-l: 1.125rem;   /* 18px */
+    --lumo-font-size-xl: 1.5rem;    /* 24px */
+    --lumo-font-size-xxl: 2rem;     /* 32px */
+    --lumo-font-size-xxxl: 2.5rem;  /* 40px */
+
+    /* ========== VARIABLES CUSTOM FESTIVENT ========== */
+
+    /* Ombres */
+    --festivent-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --festivent-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --festivent-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --festivent-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+    /* Transitions */
+    --festivent-transition:  all 0.2s ease-in-out;
+
+    /* Z-index */
+    --festivent-z-dropdown: 100;
+    --festivent-z-modal: 200;
+    --festivent-z-toast: 300;
+}
+
+/* ------------------------------------
+   3. STYLES GLOBAUX
+   ------------------------------------ */
+
+/* Reset body */
+body {
+    font-family: var(--lumo-font-family);
+    background-color: var(--festivent-bg);
+    color: var(--festivent-text-primary);
+    margin: 0;
+    padding:  0;
+}
+
+/* Liens */
+a {
+    color: var(--festivent-primary);
+    text-decoration: none;
+    transition: var(--festivent-transition);
+}
+
+a:hover {
+    color:  var(--festivent-primary-dark);
+    text-decoration: underline;
+}
+
+/* ------------------------------------
+   4. CLASSES UTILITAIRES
+   ------------------------------------ */
+
+/* Texte */
+.text-primary { color: var(--festivent-text-primary) !important; }
+.text-secondary { color: var(--festivent-text-secondary) !important; }
+.text-accent { color: var(--festivent-accent) !important; }
+.text-success { color: var(--festivent-success) !important; }
+.text-error { color: var(--festivent-error) !important; }
+
+/* Background */
+.bg-primary { background-color: var(--festivent-primary) !important; }
+.bg-accent { background-color: var(--festivent-accent) !important; }
+.bg-card { background-color: var(--festivent-bg-card) !important; }
+
+/* Ombres */
+.shadow-sm { box-shadow: var(--festivent-shadow-sm) !important; }
+.shadow-md { box-shadow: var(--festivent-shadow-md) !important; }
+.shadow-lg { box-shadow: var(--festivent-shadow-lg) !important; }
+
+/* Bordures arrondies */
+.rounded-s { border-radius: var(--lumo-border-radius-s) !important; }
+.rounded-m { border-radius: var(--lumo-border-radius-m) !important; }
+.rounded-l { border-radius: var(--lumo-border-radius-l) !important; }
+
+/* Espacements */
+.p-m { padding: var(--lumo-space-m) !important; }
+.p-l { padding: var(--lumo-space-l) !important; }
+.m-m { margin: var(--lumo-space-m) !important; }
+.m-l { margin: var(--lumo-space-l) !important; }
+
+/* ------------------------------------
+   5. COMPOSANTS VAADIN OVERRIDES
+   ------------------------------------ */
+
+/* Boutons primaires */
+vaadin-button[theme~="primary"] {
+    background-color: var(--festivent-primary);
+    color: white;
+    border-radius: var(--lumo-border-radius-m);
+    font-weight: 600;
+    transition: var(--festivent-transition);
+}
+
+vaadin-button[theme~="primary"]:hover {
+    background-color: var(--festivent-primary-dark);
+    box-shadow: var(--festivent-shadow-md);
+}
+
+/* Boutons accent */
+vaadin-button[theme~="accent"] {
+    background-color: var(--festivent-accent);
+    color: white;
+    border-radius: var(--lumo-border-radius-m);
+    font-weight: 600;
+    transition:  var(--festivent-transition);
+}
+
+vaadin-button[theme~="accent"]:hover {
+    background-color: var(--festivent-accent-dark);
+    box-shadow: var(--festivent-shadow-md);
+}
+
+/* Cards */
+. festivent-card {
+    background-color: var(--festivent-bg-card);
+    border-radius: var(--lumo-border-radius-l);
+    padding: var(--lumo-space-l);
+    box-shadow: var(--festivent-shadow-md);
+    transition: var(--festivent-transition);
+}
+
+.festivent-card:hover {
+    box-shadow: var(--festivent-shadow-lg);
+    transform: translateY(-2px);
+}
+
+/* Champs de formulaire */
+vaadin-text-field,
+vaadin-email-field,
+vaadin-password-field,
+vaadin-text-area,
+vaadin-combo-box,
+vaadin-date-picker,
+vaadin-date-time-picker {
+    border-radius: var(--lumo-border-radius-m);
+}
