@@ -2,7 +2,8 @@ package ma.projet.events.service;
 
 import ma.projet.events.entity.*;
 import ma.projet.events. exception.*;
-import ma.projet.events. repository.*;
+import ma.projet. events.repository.*;
+import org. springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,13 +17,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final ReservationRepository reservationRepository;
     private final EventRepository eventRepository;
+    private final PasswordEncoder passwordEncoder; // ✅ AJOUTÉ
 
     public UserService(UserRepository userRepository,
                        ReservationRepository reservationRepository,
-                       EventRepository eventRepository) {
+                       EventRepository eventRepository,
+                       PasswordEncoder passwordEncoder) { // ✅ AJOUTÉ
         this.userRepository = userRepository;
         this.reservationRepository = reservationRepository;
-        this.eventRepository = eventRepository;
+        this. eventRepository = eventRepository;
+        this.passwordEncoder = passwordEncoder; // ✅ AJOUTÉ
     }
 
     // ==================== MÉTHODES DE BASE (déjà existantes) ====================
@@ -39,18 +43,18 @@ public class UserService {
     @Transactional
     public User register(User user) {
         // 1. Vérifier que l'email n'existe pas déjà
-        if (userRepository. findByEmail(user.getEmail()).isPresent()) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new ConflictException("Cet email est déjà utilisé");
         }
 
         // 2. Valider le format de l'email
         if (user.getEmail() == null ||
-                !user.getEmail().contains("@") ||
+                ! user.getEmail().contains("@") ||
                 !user.getEmail().contains(".")) {
             throw new BusinessException("Format d'email invalide");
         }
 
-        // 3.  Valider la longueur du mot de passe (minimum 8 caractères)
+        // 3. Valider la longueur du mot de passe (minimum 8 caractères)
         if (user.getPassword() == null || user.getPassword().length() < 8) {
             throw new BusinessException("Le mot de passe doit contenir au moins 8 caractères");
         }
@@ -59,7 +63,7 @@ public class UserService {
         if (user.getNom() == null || user.getNom().isBlank()) {
             throw new BusinessException("Le nom est obligatoire");
         }
-        if (user.getPrenom() == null || user.getPrenom(). isBlank()) {
+        if (user.getPrenom() == null || user.getPrenom().isBlank()) {
             throw new BusinessException("Le prénom est obligatoire");
         }
 
@@ -71,14 +75,14 @@ public class UserService {
             user.setActif(true);
         }
         if (user.getDateInscription() == null) {
-            user. setDateInscription(LocalDateTime.now());
+            user.setDateInscription(LocalDateTime.now());
         }
 
-        // TODO : Plus tard, hasher le mot de passe avec BCrypt
-        // user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // ✅ MODIFIÉ : Hasher le mot de passe avec BCrypt
+        user.setPassword(passwordEncoder.encode(user. getPassword()));
 
-        // 6.  Sauvegarder
-        User savedUser = userRepository.save(user);
+        // 6. Sauvegarder
+        User savedUser = userRepository. save(user);
 
         System.out.println("✅ Nouvel utilisateur inscrit : " + savedUser.getEmail());
 
@@ -104,7 +108,7 @@ public class UserService {
      * Récupérer un utilisateur par email
      */
     public User getUserByEmail(String email) {
-        return userRepository. findByEmail(email)
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'email : " + email));
     }
 
@@ -114,6 +118,9 @@ public class UserService {
      * Authentifier un utilisateur (login)
      * Vérifie email + mot de passe
      *
+     * ⚠️ NOTE :  Avec Spring Security, cette méthode ne sera plus utilisée directement
+     * L'authentification sera gérée automatiquement par Spring Security
+     *
      * @param email Email de l'utilisateur
      * @param password Mot de passe en clair
      * @return L'utilisateur si authentification réussie
@@ -122,25 +129,19 @@ public class UserService {
     public User authenticate(String email, String password) {
         // 1. Chercher l'utilisateur par email
         User user = userRepository.findByEmail(email)
-                . orElseThrow(() -> new UnauthorizedException("Email ou mot de passe incorrect"));
+                .orElseThrow(() -> new UnauthorizedException("Email ou mot de passe incorrect"));
 
-        // 2.  Vérifier que le compte est actif
-        if (!user.isActif()) {
-            throw new UnauthorizedException("Votre compte a été désactivé.  Contactez l'administrateur.");
+        // 2. Vérifier que le compte est actif
+        if (! user.isActif()) {
+            throw new UnauthorizedException("Votre compte a été désactivé. Contactez l'administrateur.");
         }
 
-        // 3. Vérifier le mot de passe
-        // TODO : Plus tard, utiliser BCrypt pour comparer les mots de passe hashés
-        // if (!passwordEncoder.matches(password, user.getPassword())) {
-        //     throw new UnauthorizedException("Email ou mot de passe incorrect");
-        // }
-
-        // Pour l'instant : comparaison simple (NON SÉCURISÉ - temporaire)
-        if (!user. getPassword().equals(password)) {
+        // 3. ✅ MODIFIÉ :  Vérifier le mot de passe avec BCrypt
+        if (! passwordEncoder.matches(password, user.getPassword())) {
             throw new UnauthorizedException("Email ou mot de passe incorrect");
         }
 
-        System.out.println("✅ Authentification réussie : " + user.getEmail() + " (" + user.getRole(). getLabel() + ")");
+        System.out.println("✅ Authentification réussie : " + user.getEmail() + " (" + user.getRole().getLabel() + ")");
 
         return user;
     }
@@ -163,16 +164,16 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'ID : " + userId));
 
         // 2. Vérifier les droits (seulement son propre profil, sauf ADMIN)
-        if (!userId.equals(currentUserId)) {
+        if (!userId. equals(currentUserId)) {
             // TODO : Plus tard, autoriser si currentUser est ADMIN
             throw new UnauthorizedException("Vous ne pouvez modifier que votre propre profil");
         }
 
         // 3. Mettre à jour les champs autorisés (pas le rôle ni le mot de passe ici)
-        if (updatedUser.getNom() != null && !updatedUser.getNom(). isBlank()) {
-            user. setNom(updatedUser. getNom());
+        if (updatedUser.getNom() != null && !updatedUser.getNom().isBlank()) {
+            user.setNom(updatedUser.getNom());
         }
-        if (updatedUser.getPrenom() != null && !updatedUser.getPrenom().isBlank()) {
+        if (updatedUser.getPrenom() != null && !updatedUser. getPrenom().isBlank()) {
             user.setPrenom(updatedUser.getPrenom());
         }
         if (updatedUser.getTelephone() != null) {
@@ -180,7 +181,7 @@ public class UserService {
         }
 
         // Vérifier que le nouvel email n'est pas déjà pris
-        if (updatedUser.getEmail() != null && !updatedUser.getEmail().equals(user.getEmail())) {
+        if (updatedUser.getEmail() != null && ! updatedUser.getEmail().equals(user.getEmail())) {
             if (userRepository.findByEmail(updatedUser.getEmail()).isPresent()) {
                 throw new ConflictException("Cet email est déjà utilisé par un autre utilisateur");
             }
@@ -211,14 +212,13 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'ID : " + userId));
 
-        // 2.  Vérifier les droits
-        if (!userId.equals(currentUserId)) {
+        // 2. Vérifier les droits
+        if (!userId. equals(currentUserId)) {
             throw new UnauthorizedException("Vous ne pouvez changer que votre propre mot de passe");
         }
 
-        // 3. Vérifier l'ancien mot de passe
-        // TODO : Plus tard, utiliser BCrypt
-        if (!user.getPassword(). equals(oldPassword)) {
+        // 3. ✅ MODIFIÉ :  Vérifier l'ancien mot de passe avec BCrypt
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new UnauthorizedException("L'ancien mot de passe est incorrect");
         }
 
@@ -227,17 +227,15 @@ public class UserService {
             throw new BusinessException("Le nouveau mot de passe doit contenir au moins 8 caractères");
         }
 
-        // 5. Changer le mot de passe
-        // TODO : Plus tard, hasher avec BCrypt
-        // user.setPassword(passwordEncoder. encode(newPassword));
-        user.setPassword(newPassword);
+        // 5. ✅ MODIFIÉ :  Changer le mot de passe avec BCrypt
+        user.setPassword(passwordEncoder.encode(newPassword));
 
         userRepository.save(user);
 
-        System.out.println("✅ Mot de passe changé : " + user.getEmail());
+        System.out.println("✅ Mot de passe changé :  " + user.getEmail());
     }
 
-    // ==================== MÉTHODE 4 : DÉSACTIVER COMPTE ====================
+    // ==================== MÉTHODE 4 :  DÉSACTIVER COMPTE ====================
 
     /**
      * Désactiver le compte d'un utilisateur
@@ -256,7 +254,7 @@ public class UserService {
         User admin = userRepository.findById(adminId)
                 .orElseThrow(() -> new ResourceNotFoundException("Admin introuvable"));
 
-        // 3.  Vérifier que l'admin a les droits
+        // 3. Vérifier que l'admin a les droits
         if (!admin.isAdmin()) {
             throw new UnauthorizedException("Seul un administrateur peut désactiver un compte");
         }
@@ -270,7 +268,7 @@ public class UserService {
         user.setActif(false);
         userRepository.save(user);
 
-        System. out.println("✅ Compte désactivé : " + user.getEmail() + " (par admin " + admin.getEmail() + ")");
+        System.out.println("✅ Compte désactivé : " + user.getEmail() + " (par admin " + admin.getEmail() + ")");
     }
 
     // ==================== MÉTHODE 5 : ACTIVER COMPTE ====================
@@ -308,7 +306,7 @@ public class UserService {
         System.out.println("✅ Compte activé : " + user.getEmail() + " (par admin " + admin.getEmail() + ")");
     }
 
-    // ==================== MÉTHODE 6 : STATISTIQUES UTILISATEUR ====================
+    // ==================== MÉTHODE 6 :  STATISTIQUES UTILISATEUR ====================
 
     /**
      * Obtenir les statistiques d'un utilisateur
@@ -347,7 +345,7 @@ public class UserService {
 
         // Montant total dépensé (réservations confirmées uniquement)
         Double montantTotal = reservationRepository.calculateTotalAmountByUser(userId);
-        stats.put("montantTotalDepense", montantTotal != null ? montantTotal : 0.0);
+        stats.put("montantTotalDepense", montantTotal != null ? montantTotal :  0.0);
 
         // Nombre total de places réservées
         int totalPlaces = reservations.stream()
@@ -362,7 +360,7 @@ public class UserService {
             stats.put("totalEvenementsOrganises", events.size());
 
             long publishedEvents = events.stream()
-                    .filter(e -> e. getStatut() == EventStatus. PUBLIE)
+                    .filter(e -> e.getStatut() == EventStatus.PUBLIE)
                     .count();
             stats.put("evenementsPublies", publishedEvents);
         }
@@ -389,19 +387,19 @@ public class UserService {
             throw new UnauthorizedException("Seul un administrateur peut rechercher des utilisateurs");
         }
 
-        // 2.  Rechercher (insensible à la casse)
+        // 2. Rechercher (insensible à la casse)
         String keywordLower = keyword.toLowerCase();
 
-        return userRepository. findAll().stream()
+        return userRepository.findAll().stream()
                 .filter(u ->
                         u.getNom().toLowerCase().contains(keywordLower) ||
-                                u.getPrenom().toLowerCase().contains(keywordLower) ||
+                                u. getPrenom().toLowerCase().contains(keywordLower) ||
                                 u.getEmail().toLowerCase().contains(keywordLower)
                 )
-                .collect(Collectors. toList());
+                .collect(Collectors.toList());
     }
 
-    // ==================== MÉTHODE 8 : FILTRER PAR RÔLE ====================
+    // ==================== MÉTHODE 8 :  FILTRER PAR RÔLE ====================
 
     /**
      * Obtenir tous les utilisateurs d'un rôle spécifique

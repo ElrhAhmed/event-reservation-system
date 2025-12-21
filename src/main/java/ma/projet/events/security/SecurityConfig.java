@@ -1,12 +1,15 @@
-package ma.projet.events.config;
+package ma.projet.events.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+
+/**
+ * Configuration principale de Spring Security
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -14,18 +17,55 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Désactiver la protection CSRF (nécessaire pour la console H2 et les POST simples pour l'instant)
-                .csrf(csrf -> csrf.disable())
-
-                // 2. Autoriser les frames (nécessaire pour l'affichage de la console H2)
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-
-                // 3. Gestion des autorisations
+                // Configuration des autorisations
                 .authorizeHttpRequests(auth -> auth
-                        // Autoriser l'accès à la console H2 sans mot de passe
-                        .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
-                        // Pour le développement, on autorise tout le reste aussi (on sécurisera à la Phase 5)
-                        .anyRequest().permitAll()
+                        // ✅ VAADIN - Ressources internes (TRÈS IMPORTANT)
+                        .requestMatchers(
+                                "/VAADIN/**",
+                                "/vaadinServlet/**",
+                                "/frontend/**",
+                                "/frontend-es5/**",
+                                "/frontend-es6/**"
+                        ).permitAll()
+
+                        // ✅ Routes publiques
+                        .requestMatchers(
+                                "/",
+                                "/login",
+                                "/register",
+                                "/h2-console/**",
+                                "/images/**",
+                                "/styles/**",
+                                "/icons/**",
+                                "/favicon.ico"
+                        ).permitAll()
+
+                        // Routes protégées
+                        .anyRequest().authenticated()
+                )
+
+                // Configuration du formulaire de login
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/", true)
+                        .permitAll()
+                )
+
+                // Configuration de la déconnexion
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/login")
+                        .permitAll()
+                )
+
+                // Désactiver CSRF pour H2 console et Vaadin (développement uniquement)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/h2-console/**")
+                        .ignoringRequestMatchers("/**") // ⚠️ À RETIRER EN PRODUCTION
+                )
+
+                // Autoriser les frames pour H2 console
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions. sameOrigin())
                 );
 
         return http.build();

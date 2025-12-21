@@ -1,265 +1,251 @@
 package ma.projet.events.ui.view.publicview;
 
-import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component. UI;
 import com.vaadin. flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin. flow.component.html. Anchor;
-import com.vaadin. flow.component.html.H2;
-import com.vaadin.flow.component.html. Paragraph;
-import com.vaadin.flow.component.html. Span;
+import com.vaadin. flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.notification.Notification;
 import com. vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com. vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin. flow.component.textfield.EmailField;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield. PasswordField;
 import com. vaadin.flow.component.textfield.TextField;
-import com. vaadin.flow.router.PageTitle;
-import com. vaadin.flow.router.Route;
-import ma.projet.events.ui.layout.PublicLayout;
+import com. vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.validator.EmailValidator;
+import com.vaadin. flow.router.PageTitle;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow. router.RouterLink;
+import com. vaadin.flow.server.auth.AnonymousAllowed;
+import ma.projet.events.entity.User;
+import ma.projet.events.service.UserService;
 
 /**
- * Vue d'inscription (Register)
+ * Page d'inscription
  * Route : /register
  *
- * Phase 4 : Interface uniquement (pas d'enregistrement réel)
- * Phase 10 : Intégration avec UserService + BCrypt
+ * Permet à un nouvel utilisateur de créer un compte
+ * Validation complète des champs
  */
-@Route(value = "register", layout = PublicLayout.class)
+@Route("register")
 @PageTitle("Inscription - Festivent")
+@AnonymousAllowed
 public class RegisterView extends VerticalLayout {
 
-    private TextField nomField;
-    private TextField prenomField;
-    private EmailField emailField;
-    private PasswordField passwordField;
-    private PasswordField confirmPasswordField;
-    private TextField telephoneField;
-    private Button registerButton;
+    private final UserService userService;
+    private final Binder<User> binder = new Binder<>(User.class);
 
-    public RegisterView() {
+    // Champs du formulaire
+    private final TextField nomField = new TextField("Nom");
+    private final TextField prenomField = new TextField("Prénom");
+    private final EmailField emailField = new EmailField("Email");
+    private final TextField telephoneField = new TextField("Téléphone (optionnel)");
+    private final PasswordField passwordField = new PasswordField("Mot de passe");
+    private final PasswordField confirmPasswordField = new PasswordField("Confirmer le mot de passe");
+    private final Button registerButton = new Button("S'inscrire");
+
+    public RegisterView(UserService userService) {
+        this.userService = userService;
+
         // Configuration de la vue
         setSizeFull();
         setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.CENTER);
-        getStyle().set("background-color", "var(--festivent-bg)");
+        setJustifyContentMode(JustifyContentMode. CENTER);
+        getStyle()
+                .set("background", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)")
+                .set("padding", "var(--lumo-space-m)");
 
-        // Conteneur du formulaire
-        VerticalLayout formContainer = createFormContainer();
+        // Créer le contenu
+        createContent();
 
-        add(formContainer);
+        // Configurer la validation
+        configureValidation();
     }
 
     /**
-     * Crée le conteneur du formulaire d'inscription
+     * Crée le contenu de la page d'inscription
      */
-    private VerticalLayout createFormContainer() {
+    private void createContent() {
+        // Container principal
         VerticalLayout container = new VerticalLayout();
         container.setWidth("500px");
         container.setPadding(true);
         container. setSpacing(true);
-        container.addClassName("festivent-card");
+        container.getStyle()
+                .set("background-color", "white")
+                .set("border-radius", "12px")
+                .set("box-shadow", "0 10px 40px rgba(0,0,0,0.2)");
 
-        // Titre
-        H2 title = new H2("Créer un compte");
-        title.getStyle()
-                .set("color", "var(--festivent-primary)")
-                .set("margin", "0 0 var(--lumo-space-m) 0")
-                .set("text-align", "center");
+        // Logo et titre
+        H1 logo = new H1("🎉 Festivent");
+        logo.getStyle()
+                .set("color", "#667eea")
+                .set("text-align", "center")
+                .set("margin", "0 0 var(--lumo-space-s) 0")
+                .set("font-weight", "700");
 
-        // Sous-titre
-        Paragraph subtitle = new Paragraph("Rejoignez Festivent et réservez vos événements préférés");
+        Paragraph subtitle = new Paragraph("Créez votre compte gratuitement");
         subtitle.getStyle()
-                .set("color", "var(--festivent-text-secondary)")
+                .set("color", "#64748b")
                 .set("text-align", "center")
                 .set("margin", "0 0 var(--lumo-space-l) 0");
 
-        // Nom et Prénom (côte à côte)
-        HorizontalLayout nameLayout = new HorizontalLayout();
-        nameLayout.setWidthFull();
-        nameLayout.setSpacing(true);
+        // Formulaire
+        FormLayout formLayout = new FormLayout();
+        formLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px", 2)
+        );
 
-        nomField = new TextField("Nom");
-        nomField.setWidthFull();
+        // Configuration des champs
+        nomField.setRequired(true);
         nomField.setPlaceholder("Votre nom");
-        nomField.setRequiredIndicatorVisible(true);
 
-        prenomField = new TextField("Prénom");
-        prenomField.setWidthFull();
-        prenomField.setPlaceholder("Votre prénom");
-        prenomField.setRequiredIndicatorVisible(true);
+        prenomField.setRequired(true);
+        prenomField. setPlaceholder("Votre prénom");
 
-        nameLayout.add(nomField, prenomField);
-
-        // Email
-        emailField = new EmailField("Email");
-        emailField.setWidthFull();
+        emailField.setRequired(true);
         emailField.setPlaceholder("votre@email.com");
-        emailField.setClearButtonVisible(true);
-        emailField.setRequiredIndicatorVisible(true);
-        emailField.setHelperText("Utilisez un email valide pour confirmer votre inscription");
 
-        // Téléphone (optionnel)
-        telephoneField = new TextField("Téléphone");
-        telephoneField.setWidthFull();
-        telephoneField.setPlaceholder("06 12 34 56 78");
-        telephoneField. setClearButtonVisible(true);
-        telephoneField.setHelperText("Optionnel");
+        telephoneField.setPlaceholder("+212 6XX XX XX XX");
 
-        // Mot de passe
-        passwordField = new PasswordField("Mot de passe");
-        passwordField. setWidthFull();
-        passwordField.setPlaceholder("Minimum 8 caractères");
-        passwordField.setRequiredIndicatorVisible(true);
+        passwordField.setRequired(true);
         passwordField.setHelperText("Minimum 8 caractères");
 
-        // Confirmation mot de passe
-        confirmPasswordField = new PasswordField("Confirmer le mot de passe");
-        confirmPasswordField.setWidthFull();
-        confirmPasswordField.setPlaceholder("Confirmez votre mot de passe");
-        confirmPasswordField.setRequiredIndicatorVisible(true);
+        confirmPasswordField.setRequired(true);
+
+        // Ajouter les champs au formulaire
+        formLayout.add(nomField, prenomField);
+        formLayout.add(emailField, 2);
+        formLayout.add(telephoneField, 2);
+        formLayout.add(passwordField, confirmPasswordField);
 
         // Bouton d'inscription
-        registerButton = new Button("S'inscrire");
-        registerButton.addThemeVariants(ButtonVariant. LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
-        registerButton.setWidthFull();
-        registerButton. getStyle().set("margin-top", "var(--lumo-space-m)");
+        registerButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
+        registerButton.getStyle()
+                .set("width", "100%")
+                .set("margin-top", "var(--lumo-space-m)")
+                .set("background", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)")
+                .set("border", "none");
 
         registerButton.addClickListener(e -> handleRegister());
 
-        // Enter sur le dernier champ → déclenche l'inscription
-        confirmPasswordField.addKeyPressListener(event -> {
-            if (event.getKey().equals("Enter")) {
-                registerButton.click();
-            }
-        });
-
-        // Lien vers connexion
-        Paragraph loginLink = new Paragraph();
-        loginLink.getStyle()
+        // Lien vers la connexion
+        Div loginSection = new Div();
+        loginSection.getStyle()
                 .set("text-align", "center")
-                .set("margin-top", "var(--lumo-space-m)")
-                .set("color", "var(--festivent-text-secondary)");
+                .set("margin-top", "var(--lumo-space-m)");
 
-        Span loginText = new Span("Déjà inscrit ?  ");
-        loginText.getStyle().set("color", "var(--festivent-text-secondary)");
+        Span loginText = new Span("Déjà un compte ? ");
+        loginText.getStyle().set("color", "#64748b");
 
-        Anchor loginAnchor = new Anchor("login", "Se connecter");
-        loginAnchor.getStyle().set("color", "var(--festivent-primary)");
+        RouterLink loginLink = new RouterLink("Se connecter", ma.projet.events.ui.view.publicview.LoginView.class);
+        loginLink.getStyle()
+                .set("color", "#667eea")
+                .set("font-weight", "600")
+                .set("text-decoration", "none");
 
-        loginLink.add(loginText, loginAnchor);
+        loginSection.add(loginText, loginLink);
 
-        container.add(
-                title,
-                subtitle,
-                nameLayout,
-                emailField,
-                telephoneField,
-                passwordField,
-                confirmPasswordField,
-                registerButton,
-                loginLink
-        );
+        // Ajouter les composants
+        container.add(logo, subtitle, formLayout, registerButton, loginSection);
 
-        return container;
+        add(container);
     }
 
     /**
-     * Gère la tentative d'inscription
-     * Phase 4 : Validation basique uniquement
-     * Phase 10 : Enregistrement réel avec UserService + BCrypt
+     * Configure la validation des champs
+     */
+    private void configureValidation() {
+        // Validation du nom
+        binder.forField(nomField)
+                .asRequired("Le nom est obligatoire")
+                .withValidator(nom -> nom.length() >= 2, "Le nom doit contenir au moins 2 caractères")
+                .bind(User::getNom, User::setNom);
+
+        // Validation du prénom
+        binder.forField(prenomField)
+                .asRequired("Le prénom est obligatoire")
+                .withValidator(prenom -> prenom.length() >= 2, "Le prénom doit contenir au moins 2 caractères")
+                .bind(User::getPrenom, User::setPrenom);
+
+        // Validation de l'email
+        binder.forField(emailField)
+                .asRequired("L'email est obligatoire")
+                .withValidator(new EmailValidator("Email invalide"))
+                .bind(User::getEmail, User::setEmail);
+
+        // Validation du téléphone (optionnel)
+        binder.forField(telephoneField)
+                .bind(User::getTelephone, User::setTelephone);
+
+        // Validation du mot de passe
+        binder.forField(passwordField)
+                .asRequired("Le mot de passe est obligatoire")
+                .withValidator(
+                        password -> password.length() >= 8,
+                        "Le mot de passe doit contenir au moins 8 caractères"
+                )
+                .bind(User::getPassword, User:: setPassword);
+
+        // Validation de la confirmation
+        binder.forField(confirmPasswordField)
+                .asRequired("Veuillez confirmer le mot de passe")
+                .withValidator(
+                        confirm -> confirm.equals(passwordField.getValue()),
+                        "Les mots de passe ne correspondent pas"
+                )
+                .bind(
+                        user -> passwordField.getValue(), // getter (pas utilisé)
+                        (user, value) -> {} // setter vide (pas besoin de stocker)
+                );
+    }
+
+    /**
+     * Gère la soumission du formulaire d'inscription
      */
     private void handleRegister() {
-        String nom = nomField.getValue();
-        String prenom = prenomField. getValue();
-        String email = emailField.getValue();
-        String telephone = telephoneField.getValue();
-        String password = passwordField.getValue();
-        String confirmPassword = confirmPasswordField.getValue();
+        try {
+            // Créer un nouvel utilisateur
+            User user = new User();
 
-        // Validation des champs obligatoires
-        if (nom == null || nom.isBlank()) {
-            showError("Veuillez saisir votre nom");
-            nomField.focus();
-            return;
+            // Valider et remplir l'utilisateur
+            binder. writeBean(user);
+
+            // Enregistrer l'utilisateur (le mot de passe sera hashé automatiquement)
+            userService. register(user);
+
+            // Notification de succès
+            Notification notification = Notification.show(
+                    "✅ Compte créé avec succès !  Vous pouvez maintenant vous connecter.",
+                    5000,
+                    Notification.Position.TOP_CENTER
+            );
+            notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+
+            // Rediriger vers la page de connexion après 1 seconde
+            UI.getCurrent().getPage().executeJs(
+                    "setTimeout(() => window.location.href = 'login', 1000)"
+            );
+
+        } catch (ValidationException e) {
+            // Erreur de validation
+            Notification notification = Notification.show(
+                    "❌ Veuillez corriger les erreurs dans le formulaire",
+                    3000,
+                    Notification.Position.TOP_CENTER
+            );
+            notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+
+        } catch (Exception e) {
+            // Autre erreur (email déjà utilisé, etc.)
+            Notification notification = Notification.show(
+                    "❌ " + e.getMessage(),
+                    4000,
+                    Notification. Position.TOP_CENTER
+            );
+            notification.addThemeVariants(NotificationVariant. LUMO_ERROR);
         }
-
-        if (prenom == null || prenom.isBlank()) {
-            showError("Veuillez saisir votre prénom");
-            prenomField.focus();
-            return;
-        }
-
-        if (email == null || email.isBlank()) {
-            showError("Veuillez saisir votre email");
-            emailField. focus();
-            return;
-        }
-
-        // Validation basique de l'email
-        if (!email.contains("@") || !email.contains(".")) {
-            showError("Format d'email invalide");
-            emailField.focus();
-            return;
-        }
-
-        if (password == null || password.isBlank()) {
-            showError("Veuillez saisir un mot de passe");
-            passwordField.focus();
-            return;
-        }
-
-        // Validation taille mot de passe
-        if (password.length() < 8) {
-            showError("Le mot de passe doit contenir au moins 8 caractères");
-            passwordField.focus();
-            return;
-        }
-
-        if (confirmPassword == null || confirmPassword. isBlank()) {
-            showError("Veuillez confirmer votre mot de passe");
-            confirmPasswordField.focus();
-            return;
-        }
-
-        // Vérification correspondance mots de passe
-        if (! password.equals(confirmPassword)) {
-            showError("Les mots de passe ne correspondent pas");
-            confirmPasswordField.focus();
-            confirmPasswordField.clear();
-            return;
-        }
-
-        // TODO Phase 10 : Enregistrement réel avec UserService
-        // User newUser = new User();
-        // newUser.setNom(nom);
-        // newUser.setPrenom(prenom);
-        // newUser.setEmail(email);
-        // newUser.setTelephone(telephone);
-        // newUser.setPassword(passwordEncoder.encode(password));
-        // newUser.setRole(Role.CLIENT);
-        // userService.save(newUser);
-
-        // Pour l'instant, simulation
-        showSuccess("Inscription simulée (Phase 10 :  vrai enregistrement)");
-
-        // Redirection vers login après inscription
-        UI.getCurrent().navigate("login");
-    }
-
-    /**
-     * Affiche un message d'erreur
-     */
-    private void showError(String message) {
-        Notification notification = Notification. show(message, 3000, Notification.Position. MIDDLE);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-
-    /**
-     * Affiche un message de succès
-     */
-    private void showSuccess(String message) {
-        Notification notification = Notification.show(message, 3000, Notification.Position.MIDDLE);
-        notification.addThemeVariants(NotificationVariant. LUMO_SUCCESS);
     }
 }

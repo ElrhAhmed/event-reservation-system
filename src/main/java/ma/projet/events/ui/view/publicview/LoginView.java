@@ -1,173 +1,168 @@
-package ma.projet.events.ui. view.publicview;
+package ma.projet.events.ui.view.publicview;
 
-import com.vaadin.flow.component. UI;
-import com.vaadin. flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin. flow.component.html. Anchor;
-import com.vaadin. flow.component.html.H2;
-import com.vaadin. flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin. flow.component.notification.Notification;
-import com. vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield. PasswordField;
+import com.vaadin.flow. component.html.*;
+import com.vaadin.flow.component.login.LoginForm;
+import com. vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin. flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com. vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import ma.projet.events.ui.layout.PublicLayout;
+import com.vaadin.flow.router. RouterLink;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
+
 
 /**
- * Vue de connexion (Login)
+ * Page de connexion
  * Route : /login
  *
- * Phase 4 : Interface uniquement (pas d'authentification réelle)
- * Phase 10 : Intégration Spring Security
+ * Accessible sans authentification (@AnonymousAllowed)
+ * Gère l'affichage des erreurs de connexion
  */
-@Route(value = "login", layout = PublicLayout.class)
+@Route("login")
 @PageTitle("Connexion - Festivent")
-public class LoginView extends VerticalLayout {
+@AnonymousAllowed
+public class LoginView extends VerticalLayout implements BeforeEnterObserver {
 
-    private EmailField emailField;
-    private PasswordField passwordField;
-    private Button loginButton;
+    private final LoginForm loginForm = new LoginForm();
 
     public LoginView() {
         // Configuration de la vue
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
-        getStyle().set("background-color", "var(--festivent-bg)");
+        getStyle()
+                .set("background", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)")
+                .set("padding", "var(--lumo-space-m)");
 
-        // Conteneur du formulaire
-        VerticalLayout formContainer = createFormContainer();
-
-        add(formContainer);
+        // Créer le contenu
+        createContent();
     }
 
     /**
-     * Crée le conteneur du formulaire de connexion
+     * Crée le contenu de la page de connexion
      */
-    private VerticalLayout createFormContainer() {
+    private void createContent() {
+        // Container principal
         VerticalLayout container = new VerticalLayout();
         container.setWidth("400px");
         container.setPadding(true);
         container.setSpacing(true);
-        container.addClassName("festivent-card");
+        container.getStyle()
+                .set("background-color", "white")
+                .set("border-radius", "12px")
+                .set("box-shadow", "0 10px 40px rgba(0,0,0,0.2)");
 
-        // Titre
-        H2 title = new H2("Connexion");
-        title.getStyle()
-                .set("color", "var(--festivent-primary)")
-                .set("margin", "0 0 var(--lumo-space-m) 0")
-                .set("text-align", "center");
+        // Logo et titre
+        H1 logo = new H1("🎉 Festivent");
+        logo.getStyle()
+                .set("color", "#667eea")
+                .set("text-align", "center")
+                .set("margin", "0 0 var(--lumo-space-s) 0")
+                .set("font-weight", "700");
 
-        // Sous-titre
-        Paragraph subtitle = new Paragraph("Connectez-vous pour réserver vos événements");
+        Paragraph subtitle = new Paragraph("Connectez-vous à votre compte");
         subtitle.getStyle()
-                .set("color", "var(--festivent-text-secondary)")
+                .set("color", "#64748b")
                 .set("text-align", "center")
                 .set("margin", "0 0 var(--lumo-space-l) 0");
 
-        // Champ Email
-        emailField = new EmailField("Email");
-        emailField.setWidthFull();
-        emailField.setPlaceholder("votre@email.com");
-        emailField.setClearButtonVisible(true);
-        emailField.setRequiredIndicatorVisible(true);
+        // Configuration du formulaire de connexion
+        loginForm.setAction("login");
+        loginForm.setForgotPasswordButtonVisible(false);
 
-        // Champ Mot de passe
-        passwordField = new PasswordField("Mot de passe");
-        passwordField.setWidthFull();
-        passwordField.setPlaceholder("Votre mot de passe");
-        passwordField.setRequiredIndicatorVisible(true);
+        // Traduction en français
+        loginForm.getElement().setAttribute("no-autofocus", "");
+        loginForm.getElement().executeJs(
+                "this.i18n = {" +
+                        "  form: {" +
+                        "    title: ''," +
+                        "    username: 'Email'," +
+                        "    password: 'Mot de passe'," +
+                        "    submit: 'Se connecter'," +
+                        "    forgotPassword: 'Mot de passe oublié ?'" +
+                        "  }," +
+                        "  errorMessage: {" +
+                        "    title: 'Erreur de connexion'," +
+                        "    message: 'Email ou mot de passe incorrect'," +
+                        "    username: 'Email requis'," +
+                        "    password: 'Mot de passe requis'" +
+                        "  }" +
+                        "}"
+        );
 
-        // Bouton de connexion
-        loginButton = new Button("Se connecter");
-        loginButton.addThemeVariants(ButtonVariant. LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
-        loginButton.setWidthFull();
-        loginButton.getStyle().set("margin-top", "var(--lumo-space-m)");
-
-        // Action du bouton (temporaire pour Phase 4)
-        loginButton.addClickListener(e -> handleLogin());
-
-        // Enter sur les champs → déclenche la connexion
-        emailField.addKeyPressListener(event -> {
-            if (event. getKey().equals("Enter")) {
-                loginButton.click();
-            }
-        });
-
-        passwordField.addKeyPressListener(event -> {
-            if (event.getKey().equals("Enter")) {
-                loginButton.click();
-            }
-        });
-
-        // Lien vers inscription
-        // Lien vers inscription
-        Paragraph registerLink = new Paragraph();
-        registerLink.getStyle()
+        // Lien vers l'inscription
+        Div registerSection = new Div();
+        registerSection.getStyle()
                 .set("text-align", "center")
-                .set("margin-top", "var(--lumo-space-m)")
-                .set("color", "var(--festivent-text-secondary)");
+                .set("margin-top", "var(--lumo-space-m)");
 
-        // ✅ CORRECTION : Utiliser Span pour le texte
         Span registerText = new Span("Pas encore de compte ?  ");
-        registerText.getStyle().set("color", "var(--festivent-text-secondary)");
+        registerText.getStyle().set("color", "#64748b");
 
-        Anchor registerAnchor = new Anchor("register", "Créer un compte");
-        registerAnchor.getStyle().set("color", "var(--festivent-primary)");
+        RouterLink registerLink = new RouterLink("S'inscrire", ma.projet.events.ui.view.publicview.RegisterView.class);
+        registerLink.getStyle()
+                .set("color", "#667eea")
+                .set("font-weight", "600")
+                .set("text-decoration", "none");
 
-        registerLink.add(registerText, registerAnchor);  // ✅ Les deux sont des Component
+        registerSection.add(registerText, registerLink);
 
-        container.add(title, subtitle, emailField, passwordField, loginButton, registerLink);
+        // Informations de test (à supprimer en production)
+        Div testInfo = createTestInfoBox();
 
-        return container;
+        // Ajouter les composants
+        container.add(logo, subtitle, loginForm, registerSection);
+
+        add(container, testInfo);
     }
 
     /**
-     * Gère la tentative de connexion
-     * Phase 4 : Validation basique uniquement
-     * Phase 10 : Authentification réelle avec Spring Security
+     * Crée un encadré avec les comptes de test
+     * ⚠️ À SUPPRIMER EN PRODUCTION
      */
-    private void handleLogin() {
-        String email = emailField.getValue();
-        String password = passwordField.getValue();
+    private Div createTestInfoBox() {
+        Div testBox = new Div();
+        testBox.setWidth("400px");
+        testBox.getStyle()
+                .set("background-color", "rgba(255, 255, 255, 0.95)")
+                .set("border-radius", "8px")
+                .set("padding", "var(--lumo-space-m)")
+                .set("margin-top", "var(--lumo-space-m)")
+                .set("box-shadow", "0 4px 12px rgba(0,0,0,0.1)");
 
-        // Validation des champs
-        if (email == null || email.isBlank()) {
-            showError("Veuillez saisir votre email");
-            emailField.focus();
-            return;
+        H4 title = new H4("🧪 Comptes de test");
+        title.getStyle()
+                .set("margin", "0 0 var(--lumo-space-s) 0")
+                .set("color", "#334155");
+
+        Paragraph info = new Paragraph();
+        info.getElement().setProperty("innerHTML",
+                "<strong>Admin :</strong> admin@festivent. com / admin123<br>" +
+                        "<strong>Organisateur :</strong> sarah.martin@festivent.com / sarah123<br>" +
+                        "<strong>Client :</strong> ahmed.benali@festivent.com / ahmed123"
+        );
+        info.getStyle()
+                .set("font-size", "var(--lumo-font-size-s)")
+                .set("color", "#64748b")
+                .set("margin", "0")
+                .set("line-height", "1.8");
+
+        testBox.add(title, info);
+        return testBox;
+    }
+
+    /**
+     * Appelée avant l'entrée dans la vue
+     * Gère l'affichage de l'erreur de connexion
+     */
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        // Afficher l'erreur si les identifiants sont incorrects
+        if (event. getLocation()
+                .getQueryParameters()
+                .getParameters()
+                .containsKey("error")) {
+            loginForm.setError(true);
         }
-
-        if (password == null || password.isBlank()) {
-            showError("Veuillez saisir votre mot de passe");
-            passwordField.focus();
-            return;
-        }
-
-        // TODO Phase 10 : Authentification réelle avec Spring Security
-        // Pour l'instant, on simule une connexion réussie
-        showSuccess("Connexion simulée (Phase 10 :  vraie authentification)");
-
-        // Redirection vers le dashboard (sera implémenté en Phase 6-7)
-        // UI.getCurrent().navigate("dashboard");
-    }
-
-    /**
-     * Affiche un message d'erreur
-     */
-    private void showError(String message) {
-        Notification notification = Notification.show(message, 3000, Notification. Position.MIDDLE);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-
-    /**
-     * Affiche un message de succès
-     */
-    private void showSuccess(String message) {
-        Notification notification = Notification. show(message, 3000, Notification.Position.MIDDLE);
-        notification.addThemeVariants(NotificationVariant. LUMO_SUCCESS);
     }
 }
