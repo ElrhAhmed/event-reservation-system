@@ -1,3 +1,5 @@
+
+/*
 package ma.projet.events.config;
 
 import ma.projet.events.entity.Role;
@@ -48,6 +50,7 @@ public class DataInitializer {
             System. out.println("================================\n");
         };
     }
+    //
 
     private void createUser(UserRepository repo, PasswordEncoder encoder,
                             String nom, String prenom, String email, String password,
@@ -68,3 +71,5 @@ public class DataInitializer {
         System.out.println("   Hash généré : " + user.getPassword().substring(0, 20) + "...");
     }
 }
+
+ */

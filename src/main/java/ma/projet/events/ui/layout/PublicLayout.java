@@ -1,126 +1,159 @@
-package ma. projet.events.ui.layout;
+package ma.projet.events.ui.layout;
 
-import com.vaadin.flow.component.UI;
-import com.vaadin. flow.component.applayout.AppLayout;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin. flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component. applayout.AppLayout;
+import com.vaadin.flow. component.button.Button;
+import com.vaadin.flow.component.button. ButtonVariant;
+import com. vaadin.flow.component.html.Div;
+import com. vaadin.flow.component.html.Footer;
+import com.vaadin. flow.component.html.H1;
+import com.vaadin. flow.component.html. Span;
 import com.vaadin.flow.component.icon.Icon;
-import com.vaadin. flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow. component.orderedlayout.HorizontalLayout;
-import com. vaadin.flow.router.RouterLink;
-import ma. projet.events.ui.view. publicview.EventListView;
-import ma.projet.events.ui.view.publicview.HomeView;
+import com.vaadin.flow.component.icon. VaadinIcon;
+import com.vaadin.flow.component. orderedlayout.FlexComponent;
+import com.vaadin. flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.router.RouterLink;
 
 /**
- * Layout pour les pages publiques (sans authentification)
- * Utilisé par : LoginView, RegisterView, HomeView, EventListView, EventDetailView
+ * Public application layout.
+ * Used by all public views: HomeView, EventListView, EventDetailView, LoginView, RegisterView.
+ *
+ * Features:
+ * - Fixed header with navigation
+ * - Logo and brand name
+ * - Login/Register buttons
+ * - Simple footer
  */
 public class PublicLayout extends AppLayout {
 
     public PublicLayout() {
         createHeader();
+        createFooter();
     }
 
     /**
-     * Crée le header avec logo et navigation
+     * Creates the fixed header with logo, navigation, and auth buttons.
      */
     private void createHeader() {
-        // Logo avec icône
-        Icon logoIcon = VaadinIcon.STAR.create();
-        logoIcon.getStyle()
-                .set("color", "var(--festivent-accent)")
-                .set("margin-right", "var(--lumo-space-s)");
-
-        H1 logo = new H1("Festivent");
-        logo.getStyle()
-                .set("font-size", "var(--lumo-font-size-xl)")
-                .set("margin", "0")
+        // Logo section (left)
+        Icon calendarIcon = VaadinIcon.CALENDAR. create();
+        calendarIcon.getStyle()
                 .set("color", "var(--festivent-primary)")
-                .set("font-weight", "700");
+                .set("width", "24px")
+                .set("height", "24px");
 
-        HorizontalLayout logoLayout = new HorizontalLayout(logoIcon, logo);
-        logoLayout.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
-        logoLayout.setSpacing(false);
+        H1 brandName = new H1("EventReserve");
+        brandName.getStyle()
+                .set("margin", "0")
+                .set("font-size", "var(--lumo-font-size-l)")
+                .set("font-weight", "700")
+                .set("color", "var(--festivent-secondary-text)");
 
-        // Lien vers l'accueil sur le logo
-        RouterLink homeLink = new RouterLink("", HomeView. class);
-        homeLink.add(logoLayout);
-        homeLink.getStyle().set("text-decoration", "none");
+        HorizontalLayout logoSection = new HorizontalLayout(calendarIcon, brandName);
+        logoSection.setAlignItems(FlexComponent. Alignment.CENTER);
+        logoSection.setSpacing(true);
+        logoSection.getStyle().set("gap", "var(--festivent-space-xs)");
 
-        // Navigation publique
-        HorizontalLayout navigation = createNavigation();
+        // Navigation links (center)
+        RouterLink homeLink = new RouterLink("Home", null); // Route will be set by views
+        homeLink.getStyle()
+                .set("color", "var(--festivent-secondary-text)")
+                .set("text-decoration", "none")
+                .set("font-weight", "500")
+                .set("padding", "var(--festivent-space-xs) var(--festivent-space-sm)");
 
-        // Boutons Connexion / Inscription
-        HorizontalLayout authButtons = createAuthButtons();
+        RouterLink eventsLink = new RouterLink("Events", null);
+        eventsLink.getStyle()
+                .set("color", "var(--festivent-secondary-text)")
+                .set("text-decoration", "none")
+                .set("font-weight", "500")
+                .set("padding", "var(--festivent-space-xs) var(--festivent-space-sm)");
 
-        // Layout du header
-        HorizontalLayout header = new HorizontalLayout(
-                homeLink,
-                navigation,
-                authButtons
-        );
-        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+        HorizontalLayout navLinks = new HorizontalLayout(homeLink, eventsLink);
+        navLinks.setAlignItems(FlexComponent.Alignment.CENTER);
+        navLinks.setSpacing(true);
+        navLinks.getStyle().set("gap", "var(--festivent-space-md)");
+
+        // Auth buttons (right)
+        Button loginButton = new Button("Login");
+        loginButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        loginButton.getStyle()
+                .set("color", "var(--festivent-secondary-text)")
+                .set("font-weight", "500");
+        loginButton.addClickListener(e -> loginButton.getUI().ifPresent(ui -> ui.navigate("login")));
+
+        Button registerButton = new Button("Register");
+        registerButton. addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        registerButton.addClickListener(e -> registerButton. getUI().ifPresent(ui -> ui.navigate("register")));
+
+        HorizontalLayout authButtons = new HorizontalLayout(loginButton, registerButton);
+        authButtons.setAlignItems(FlexComponent.Alignment.CENTER);
+        authButtons.setSpacing(true);
+        authButtons.getStyle().set("gap", "var(--festivent-space-sm)");
+
+        // Header layout
+        HorizontalLayout header = new HorizontalLayout(logoSection, navLinks, authButtons);
         header.setWidthFull();
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
         header.setSpacing(true);
         header.setPadding(true);
         header.getStyle()
-                .set("background-color", "var(--festivent-bg-card)")
-                .set("box-shadow", "var(--festivent-shadow-md)");
+                .set("background-color", "white")
+                .set("box-shadow", "var(--festivent-shadow-sm)")
+                .set("padding", "var(--festivent-space-md) var(--festivent-space-xl)");
 
-        // Expansion pour pousser les boutons auth à droite
-        header.expand(navigation);
+        // Expand center section to push auth buttons to the right
+        header.expand(navLinks);
 
         addToNavbar(header);
     }
 
     /**
-     * Crée les liens de navigation publique
+     * Creates the simple footer with copyright information.
      */
-    private HorizontalLayout createNavigation() {
-        // Lien Accueil
-        RouterLink accueilLink = new RouterLink("Accueil", HomeView. class);
-        accueilLink.getStyle()
-                .set("color", "var(--festivent-text-primary)")
-                .set("text-decoration", "none")
-                .set("font-weight", "500")
-                .set("margin-left", "var(--lumo-space-l)");
+    private void createFooter() {
+        // Footer icon + brand
+        Icon footerIcon = VaadinIcon.CALENDAR.create();
+        footerIcon.getStyle()
+                .set("color", "var(--festivent-primary)")
+                .set("width", "20px")
+                .set("height", "20px");
 
-        // ✅ CORRECTION : Lien vers EventListView
-        RouterLink eventsLink = new RouterLink("Événements", EventListView.class);
-        eventsLink.getStyle()
-                .set("color", "var(--festivent-text-primary)")
-                .set("text-decoration", "none")
-                .set("font-weight", "500")
-                .set("margin-left", "var(--lumo-space-l)");
+        Span brandName = new Span("EventReserve");
+        brandName.getStyle()
+                .set("font-weight", "600")
+                .set("color", "var(--festivent-secondary-text)")
+                .set("margin-left", "var(--festivent-space-xs)");
 
-        HorizontalLayout nav = new HorizontalLayout(accueilLink, eventsLink);
-        nav.setSpacing(true);
-        return nav;
-    }
+        HorizontalLayout footerBrand = new HorizontalLayout(footerIcon, brandName);
+        footerBrand.setAlignItems(FlexComponent. Alignment.CENTER);
+        footerBrand.setSpacing(false);
 
-    /**
-     * Crée les boutons Connexion / Inscription
-     */
-    private HorizontalLayout createAuthButtons() {
-        // ✅ CORRECTION : Bouton Connexion avec navigation
-        Button loginButton = new Button("Connexion", VaadinIcon.SIGN_IN.create());
-        loginButton.addThemeVariants(ButtonVariant. LUMO_TERTIARY);
-        loginButton.getStyle().set("color", "var(--festivent-primary)");
-        loginButton.addClickListener(e -> {
-            UI.getCurrent().navigate("login");
-        });
+        // Copyright text
+        Span copyright = new Span("© 2025 EventReserve. All rights reserved.");
+        copyright.getStyle()
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-size", "var(--lumo-font-size-s)")
+                .set("margin-top", "var(--festivent-space-xs)");
 
-        // ✅ CORRECTION :  Bouton Inscription avec navigation
-        Button registerButton = new Button("Inscription", VaadinIcon. USER_CHECK.create());
-        registerButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        registerButton. addClickListener(e -> {
-            UI.getCurrent().navigate("register");
-        });
+        // Footer container
+        Div footerContent = new Div(footerBrand, copyright);
+        footerContent.getStyle()
+                .set("display", "flex")
+                .set("flex-direction", "column")
+                .set("align-items", "center")
+                .set("gap", "var(--festivent-space-xs)");
 
-        HorizontalLayout buttons = new HorizontalLayout(loginButton, registerButton);
-        buttons.setSpacing(true);
-        return buttons;
+        Footer footer = new Footer(footerContent);
+        footer.getStyle()
+                .set("padding", "var(--festivent-space-xl)")
+                .set("background-color", "white")
+                .set("border-top", "1px solid var(--festivent-secondary)")
+                .set("text-align", "center")
+                .set("margin-top", "auto");
+
+        // Add footer to the layout
+        // Note: AppLayout doesn't have a direct footer slot, so we add it to the content area
+        // Views using this layout should be aware of the footer presence
+        setContent(footer);
     }
 }

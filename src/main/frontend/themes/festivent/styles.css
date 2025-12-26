@@ -1,232 +1,99 @@
 /* ============================================
-   FESTIVENT - Design System
-   Thème Vaadin 24. 9.6 (Lumo)
-   Package: ma.projet.events
+   FESTIVENT - Global Theme
+   Base: Vaadin 24 Lumo
+   Design: Modern SaaS
    ============================================ */
 
 /* ------------------------------------
-   1.  IMPORT DE LA FONT INTER
+   1. FONT IMPORT
    ------------------------------------ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk: wght@300;400;500;600;700&display=swap');
 
 /* ------------------------------------
-   2. VARIABLES CSS GLOBALES
+   2. GLOBAL CSS VARIABLES
    ------------------------------------ */
 html {
-    /* ========== COULEURS PRINCIPALES FESTIVENT ========== */
+    /* ========== BRAND COLORS ========== */
+    --festivent-primary: #0b64f4;
+    --festivent-primary-text: #ffffff;
+    --festivent-secondary: #e8ebee;
+    --festivent-secondary-text: #29303d;
+    --festivent-accent: #e7f0fe;
+    --festivent-accent-text: #073c92;
 
-    /* Primary - Bleu principal */
-    --festivent-primary:  #2563EB;
-    --festivent-primary-dark: #1E40AF;
-    --festivent-primary-light: #3B82F6;
+    /* ========== SHADOWS (SOFT & SUBTLE) ========== */
+    --festivent-shadow-sm: 0 1px 3px 0 rgba(11, 100, 244, 0.08);
+    --festivent-shadow-md: 0 4px 12px 0 rgba(11, 100, 244, 0.12);
+    --festivent-shadow-lg: 0 10px 24px 0 rgba(11, 100, 244, 0.16);
 
-    /* Accent - Orange */
-    --festivent-accent: #F97316;
-    --festivent-accent-dark: #EA580C;
-    --festivent-accent-light: #FB923C;
+    /* ========== BORDER RADIUS (LARGE ROUNDED) ========== */
+    --festivent-radius-sm: 8px;
+    --festivent-radius-md: 12px;
+    --festivent-radius-lg: 16px;
+    --festivent-radius-xl: 24px;
 
-    /* Background */
-    --festivent-bg: #F8FAFC;
-    --festivent-bg-card: #FFFFFF;
+    /* ========== SPACING (AIRY & CLEAN) ========== */
+    --festivent-space-xs: 0.5rem;   /* 8px */
+    --festivent-space-sm: 0.75rem;  /* 12px */
+    --festivent-space-md: 1rem;     /* 16px */
+    --festivent-space-lg:  1.5rem;   /* 24px */
+    --festivent-space-xl: 2rem;     /* 32px */
+    --festivent-space-2xl: 3rem;    /* 48px */
 
-    /* Texte */
-    --festivent-text-primary: #0F172A;
-    --festivent-text-secondary: #64748B;
-    --festivent-text-tertiary: #94A3B8;
-
-    /* États généraux */
-    --festivent-success: #16A34A;
-    --festivent-success-light: #22C55E;
-    --festivent-error: #DC2626;
-    --festivent-error-light: #EF4444;
-    --festivent-warning: #F59E0B;
-    --festivent-info: #0EA5E9;
-
-    /* ========== COULEURS STATUTS (alignées avec tes Enums) ========== */
-
-    /* EventStatus.java */
-    --festivent-status-brouillon: #FFA500;
-    --festivent-status-publie: #28A745;
-    --festivent-status-annule: #DC3545;
-    --festivent-status-termine: #6C757D;
-
-    /* ReservationStatus.java */
-    --festivent-status-attente: #FFC107;
-    --festivent-status-confirmee: #28A745;
-    --festivent-status-annulee: #DC3545;
-
-    /* Bordures */
-    --festivent-border:  #E2E8F0;
-    --festivent-border-hover: #CBD5E1;
-
-    /* ========== OVERRIDE DES VARIABLES LUMO ========== */
-
-    /* Couleur principale Vaadin */
+    /* ========== OVERRIDE LUMO VARIABLES ========== */
     --lumo-primary-color: var(--festivent-primary);
-    --lumo-primary-color-50pct: rgba(37, 99, 235, 0.5);
-    --lumo-primary-color-10pct: rgba(37, 99, 235, 0.1);
     --lumo-primary-text-color: var(--festivent-primary);
+    --lumo-primary-contrast-color: var(--festivent-primary-text);
 
-    /* Couleur d'erreur */
-    --lumo-error-color: var(--festivent-error);
-    --lumo-error-color-50pct:  rgba(220, 38, 38, 0.5);
-    --lumo-error-color-10pct: rgba(220, 38, 38, 0.1);
+    --lumo-base-color: #ffffff;
+    --lumo-body-text-color: var(--festivent-secondary-text);
+    --lumo-secondary-text-color: #6b7280;
+    --lumo-tertiary-text-color: #9ca3af;
 
-    /* Couleur de succès */
-    --lumo-success-color: var(--festivent-success);
-    --lumo-success-color-50pct: rgba(22, 163, 74, 0.5);
-    --lumo-success-color-10pct: rgba(22, 163, 74, 0.1);
+    --lumo-border-radius-s: var(--festivent-radius-sm);
+    --lumo-border-radius-m: var(--festivent-radius-md);
+    --lumo-border-radius-l: var(--festivent-radius-lg);
 
-    /* Background */
-    --lumo-base-color: var(--festivent-bg-card);
-    --lumo-tint-5pct: rgba(15, 23, 42, 0.05);
-    --lumo-tint-10pct: rgba(15, 23, 42, 0.1);
-    --lumo-shade-5pct: rgba(15, 23, 42, 0.05);
-    --lumo-shade-10pct: rgba(15, 23, 42, 0.1);
+    --lumo-space-xs: var(--festivent-space-xs);
+    --lumo-space-s: var(--festivent-space-sm);
+    --lumo-space-m: var(--festivent-space-md);
+    --lumo-space-l: var(--festivent-space-lg);
+    --lumo-space-xl: var(--festivent-space-xl);
 
-    /* Texte */
-    --lumo-body-text-color: var(--festivent-text-primary);
-    --lumo-secondary-text-color: var(--festivent-text-secondary);
-    --lumo-tertiary-text-color: var(--festivent-text-tertiary);
-
-    /* Bordures */
-    --lumo-contrast-10pct: var(--festivent-border);
-
-    /* Rayons de bordure */
-    --lumo-border-radius-s: 4px;
-    --lumo-border-radius-m: 8px;
-    --lumo-border-radius-l: 12px;
-
-    /* Espacements */
-    --lumo-space-xs: 0.25rem;  /* 4px */
-    --lumo-space-s: 0.5rem;    /* 8px */
-    --lumo-space-m: 1rem;      /* 16px */
-    --lumo-space-l: 1.5rem;    /* 24px */
-    --lumo-space-xl:  2rem;     /* 32px */
-
-    /* Typographie */
-    --lumo-font-family:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --lumo-font-size-xs: 0.75rem;   /* 12px */
-    --lumo-font-size-s: 0.875rem;   /* 14px */
-    --lumo-font-size-m: 1rem;       /* 16px */
-    --lumo-font-size-l: 1.125rem;   /* 18px */
-    --lumo-font-size-xl: 1.5rem;    /* 24px */
-    --lumo-font-size-xxl: 2rem;     /* 32px */
-    --lumo-font-size-xxxl: 2.5rem;  /* 40px */
-
-    /* ========== VARIABLES CUSTOM FESTIVENT ========== */
-
-    /* Ombres */
-    --festivent-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --festivent-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --festivent-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    --festivent-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-
-    /* Transitions */
-    --festivent-transition:  all 0.2s ease-in-out;
-
-    /* Z-index */
-    --festivent-z-dropdown: 100;
-    --festivent-z-modal: 200;
-    --festivent-z-toast: 300;
+    --lumo-font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --lumo-font-size-xxs: 0.75rem;
+    --lumo-font-size-xs: 0.875rem;
+    --lumo-font-size-s: 1rem;
+    --lumo-font-size-m: 1.125rem;
+    --lumo-font-size-l:  1.25rem;
+    --lumo-font-size-xl: 1.5rem;
+    --lumo-font-size-xxl: 2rem;
 }
 
 /* ------------------------------------
-   3. STYLES GLOBAUX
+   3. GLOBAL RESETS
    ------------------------------------ */
-
-/* Reset body */
 body {
     font-family: var(--lumo-font-family);
-    background-color: var(--festivent-bg);
-    color: var(--festivent-text-primary);
+    background-color: #f9fafb;
+    color:  var(--festivent-secondary-text);
     margin: 0;
     padding:  0;
-}
-
-/* Liens */
-a {
-    color: var(--festivent-primary);
-    text-decoration: none;
-    transition: var(--festivent-transition);
-}
-
-a:hover {
-    color:  var(--festivent-primary-dark);
-    text-decoration: underline;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* ------------------------------------
-   4. CLASSES UTILITAIRES
+   4. UTILITY CLASSES
    ------------------------------------ */
 
-/* Texte */
-.text-primary { color: var(--festivent-text-primary) !important; }
-.text-secondary { color: var(--festivent-text-secondary) !important; }
-.text-accent { color: var(--festivent-accent) !important; }
-.text-success { color: var(--festivent-success) !important; }
-.text-error { color: var(--festivent-error) !important; }
-
-/* Background */
-.bg-primary { background-color: var(--festivent-primary) !important; }
-.bg-accent { background-color: var(--festivent-accent) !important; }
-.bg-card { background-color: var(--festivent-bg-card) !important; }
-
-/* Ombres */
-.shadow-sm { box-shadow: var(--festivent-shadow-sm) !important; }
-.shadow-md { box-shadow: var(--festivent-shadow-md) !important; }
-.shadow-lg { box-shadow: var(--festivent-shadow-lg) !important; }
-
-/* Bordures arrondies */
-.rounded-s { border-radius: var(--lumo-border-radius-s) !important; }
-.rounded-m { border-radius: var(--lumo-border-radius-m) !important; }
-.rounded-l { border-radius: var(--lumo-border-radius-l) !important; }
-
-/* Espacements */
-.p-m { padding: var(--lumo-space-m) !important; }
-.p-l { padding: var(--lumo-space-l) !important; }
-.m-m { margin: var(--lumo-space-m) !important; }
-.m-l { margin: var(--lumo-space-l) !important; }
-
-/* ------------------------------------
-   5. COMPOSANTS VAADIN OVERRIDES
-   ------------------------------------ */
-
-/* Boutons primaires */
-vaadin-button[theme~="primary"] {
-    background-color: var(--festivent-primary);
-    color: white;
-    border-radius: var(--lumo-border-radius-m);
-    font-weight: 600;
-    transition: var(--festivent-transition);
-}
-
-vaadin-button[theme~="primary"]:hover {
-    background-color: var(--festivent-primary-dark);
+/* ========== CARD COMPONENT ========== */
+.festivent-card {
+    background-color: var(--lumo-base-color);
+    border-radius: var(--festivent-radius-lg);
     box-shadow: var(--festivent-shadow-md);
-}
-
-/* Boutons accent */
-vaadin-button[theme~="accent"] {
-    background-color: var(--festivent-accent);
-    color: white;
-    border-radius: var(--lumo-border-radius-m);
-    font-weight: 600;
-    transition:  var(--festivent-transition);
-}
-
-vaadin-button[theme~="accent"]:hover {
-    background-color: var(--festivent-accent-dark);
-    box-shadow: var(--festivent-shadow-md);
-}
-
-/* Cards */
-. festivent-card {
-    background-color: var(--festivent-bg-card);
-    border-radius: var(--lumo-border-radius-l);
-    padding: var(--lumo-space-l);
-    box-shadow: var(--festivent-shadow-md);
-    transition: var(--festivent-transition);
+    padding: var(--festivent-space-lg);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .festivent-card:hover {
@@ -234,13 +101,137 @@ vaadin-button[theme~="accent"]:hover {
     transform: translateY(-2px);
 }
 
-/* Champs de formulaire */
+/* ========== BADGE COMPONENT ========== */
+.festivent-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--festivent-radius-sm);
+    font-size: var(--lumo-font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+}
+
+.festivent-badge--primary {
+    background-color:  var(--festivent-accent);
+    color: var(--festivent-accent-text);
+}
+
+.festivent-badge--secondary {
+    background-color: var(--festivent-secondary);
+    color: var(--festivent-secondary-text);
+}
+
+/* ========== PAGE CONTAINER ========== */
+. festivent-container {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--festivent-space-lg);
+    padding-right: var(--festivent-space-lg);
+}
+
+.festivent-container--narrow {
+    max-width: 960px;
+}
+
+. festivent-container--wide {
+    max-width: 1536px;
+}
+
+/* ========== SPACING UTILITIES ========== */
+. festivent-mt-xs { margin-top: var(--festivent-space-xs); }
+.festivent-mt-sm { margin-top: var(--festivent-space-sm); }
+.festivent-mt-md { margin-top: var(--festivent-space-md); }
+.festivent-mt-lg { margin-top: var(--festivent-space-lg); }
+.festivent-mt-xl { margin-top: var(--festivent-space-xl); }
+
+.festivent-mb-xs { margin-bottom: var(--festivent-space-xs); }
+.festivent-mb-sm { margin-bottom: var(--festivent-space-sm); }
+.festivent-mb-md { margin-bottom: var(--festivent-space-md); }
+.festivent-mb-lg { margin-bottom: var(--festivent-space-lg); }
+.festivent-mb-xl { margin-bottom: var(--festivent-space-xl); }
+
+.festivent-p-xs { padding: var(--festivent-space-xs); }
+.festivent-p-sm { padding: var(--festivent-space-sm); }
+.festivent-p-md { padding: var(--festivent-space-md); }
+.festivent-p-lg { padding: var(--festivent-space-lg); }
+.festivent-p-xl { padding: var(--festivent-space-xl); }
+
+/* ========== TEXT UTILITIES ========== */
+. festivent-text-primary {
+    color: var(--festivent-secondary-text);
+}
+
+.festivent-text-secondary {
+    color: var(--lumo-secondary-text-color);
+}
+
+.festivent-text-accent {
+    color: var(--festivent-accent-text);
+}
+
+/* ========== SHADOW UTILITIES ========== */
+. festivent-shadow-sm {
+    box-shadow: var(--festivent-shadow-sm);
+}
+
+.festivent-shadow-md {
+    box-shadow:  var(--festivent-shadow-md);
+}
+
+.festivent-shadow-lg {
+    box-shadow: var(--festivent-shadow-lg);
+}
+
+/* ------------------------------------
+   5. VAADIN COMPONENT REFINEMENTS
+   ------------------------------------ */
+
+/* ========== BUTTONS ========== */
+vaadin-button[theme~="primary"] {
+    background-color: var(--festivent-primary);
+    color: var(--festivent-primary-text);
+    border-radius: var(--festivent-radius-md);
+    font-weight: 600;
+    box-shadow: var(--festivent-shadow-sm);
+    transition: all 0.2s ease;
+}
+
+vaadin-button[theme~="primary"]:hover:not([disabled]) {
+    background-color: #0952c9;
+    box-shadow: var(--festivent-shadow-md);
+    transform: translateY(-1px);
+}
+
+vaadin-button[theme~="primary"]:active:not([disabled]) {
+    transform: translateY(0);
+}
+
+/* ========== INPUT FIELDS ========== */
 vaadin-text-field,
 vaadin-email-field,
 vaadin-password-field,
-vaadin-text-area,
-vaadin-combo-box,
-vaadin-date-picker,
-vaadin-date-time-picker {
-    border-radius: var(--lumo-border-radius-m);
+vaadin-number-field,
+vaadin-text-area {
+    --lumo-border-radius:  var(--festivent-radius-md);
+}
+
+/* ========== GRID ========== */
+vaadin-grid {
+    border-radius: var(--festivent-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--festivent-shadow-sm);
+}
+
+/* ========== DIALOG ========== */
+vaadin-dialog-overlay {
+    --lumo-border-radius: var(--festivent-radius-xl);
+}
+
+/* ========== NOTIFICATION ========== */
+vaadin-notification-card {
+    border-radius: var(--festivent-radius-md);
+    box-shadow: var(--festivent-shadow-lg);
 }

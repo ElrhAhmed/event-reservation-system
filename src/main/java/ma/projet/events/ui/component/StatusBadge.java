@@ -1,105 +1,97 @@
 package ma.projet.events.ui.component;
 
-import com.vaadin.flow.component.html. Span;
-import ma.projet.events.entity.EventStatus;
-import ma.projet.events.entity.ReservationStatus;
+import com.vaadin.flow.component. html.Span;
 
 /**
- * Badge coloré pour afficher un statut (Event ou Reservation)
- * Utilise les couleurs définies dans les enums et le thème CSS
+ * Reusable status/category badge component.
  *
- * Exemples d'utilisation :
- * - new StatusBadge(EventStatus. PUBLIE)
- * - new StatusBadge(ReservationStatus. CONFIRMEE)
+ * Displays a compact, pill-shaped badge with customizable text.
+ * Designed to work on light backgrounds and overlaid on images.
+ *
+ * Usage examples:
+ * <pre>
+ * // Simple badge
+ * StatusBadge badge = new StatusBadge("Conference");
+ *
+ * // Change text dynamically
+ * badge.setText("Workshop");
+ *
+ * // Inside EventCard overlay
+ * StatusBadge categoryBadge = new StatusBadge(event.getCategorie().getLabel());
+ * imageContainer.add(categoryBadge);
+ *
+ * // In a grid or layout
+ * StatusBadge statusBadge = new StatusBadge(reservation.getStatut().getLabel());
+ * grid.addColumn(res -> new StatusBadge(res.getStatut().getLabel()));
+ * </pre>
+ *
+ * Technical constraints:
+ * - No navigation logic
+ * - No service/repository calls
+ * - Domain-agnostic (accepts any String)
+ * - Styling via global theme variables
  */
 public class StatusBadge extends Span {
 
     /**
-     * Constructeur pour EventStatus
+     * Creates a status badge with the specified label text.
+     *
+     * @param text The text to display in the badge (e.g., "Conference", "Published")
      */
-    public StatusBadge(EventStatus status) {
-        setText(status.getLabel());
-        applyEventStatusStyle(status);
+    public StatusBadge(String text) {
+        setText(text);
+        applyStyles();
     }
 
     /**
-     * Constructeur pour ReservationStatus
+     * Creates an empty status badge.
+     * Text can be set later using {@link #setText(String)}.
      */
-    public StatusBadge(ReservationStatus status) {
-        setText(status.getLabel());
-        applyReservationStatusStyle(status);
+    public StatusBadge() {
+        applyStyles();
     }
 
     /**
-     * Applique le style selon le statut de l'événement
+     * Applies the badge styling using global theme variables.
      */
-    private void applyEventStatusStyle(EventStatus status) {
-        // Style de base
+    private void applyStyles() {
+        // Apply global badge utility class from theme
+        addClassName("festivent-badge");
+        addClassName("festivent-badge--primary");
+
+        // Inline styles for pill shape and compactness
         getStyle()
-                .set("padding", "var(--lumo-space-xs) var(--lumo-space-s)")
-                .set("border-radius", "var(--lumo-border-radius-m)")
+                .set("display", "inline-flex")
+                .set("align-items", "center")
+                .set("padding", "0.25rem 0.75rem")
+                .set("border-radius", "var(--festivent-radius-xl)")  // Fully rounded pill shape
                 .set("font-size", "var(--lumo-font-size-xs)")
                 .set("font-weight", "600")
-                .set("display", "inline-block")
+                .set("letter-spacing", "0.025em")
                 .set("text-transform", "uppercase")
-                .set("letter-spacing", "0.5px");
-
-        // Couleur selon le statut
-        switch (status) {
-            case BROUILLON -> {
-                getStyle()
-                        .set("background-color", "var(--festivent-status-brouillon)")
-                        .set("color", "white");
-            }
-            case PUBLIE -> {
-                getStyle()
-                        .set("background-color", "var(--festivent-status-publie)")
-                        . set("color", "white");
-            }
-            case ANNULE -> {
-                getStyle()
-                        .set("background-color", "var(--festivent-status-annule)")
-                        .set("color", "white");
-            }
-            case TERMINE -> {
-                getStyle()
-                        .set("background-color", "var(--festivent-status-termine)")
-                        . set("color", "white");
-            }
-        }
+                .set("white-space", "nowrap")
+                .set("background-color", "var(--festivent-primary)")
+                .set("color", "var(--festivent-primary-text)")
+                .set("box-shadow", "var(--festivent-shadow-sm)");
     }
 
     /**
-     * Applique le style selon le statut de la réservation
+     * Updates the badge text.
+     *
+     * @param text The new text to display
      */
-    private void applyReservationStatusStyle(ReservationStatus status) {
-        // Style de base
-        getStyle()
-                .set("padding", "var(--lumo-space-xs) var(--lumo-space-s)")
-                .set("border-radius", "var(--lumo-border-radius-m)")
-                .set("font-size", "var(--lumo-font-size-xs)")
-                .set("font-weight", "600")
-                .set("display", "inline-block")
-                .set("text-transform", "uppercase")
-                .set("letter-spacing", "0.5px");
+    @Override
+    public void setText(String text) {
+        super.setText(text != null ? text : "");
+    }
 
-        // Couleur selon le statut
-        switch (status) {
-            case EN_ATTENTE -> {
-                getStyle()
-                        .set("background-color", "var(--festivent-status-attente)")
-                        .set("color", "white");
-            }
-            case CONFIRMEE -> {
-                getStyle()
-                        .set("background-color", "var(--festivent-status-confirmee)")
-                        .set("color", "white");
-            }
-            case ANNULEE -> {
-                getStyle()
-                        .set("background-color", "var(--festivent-status-annulee)")
-                        .set("color", "white");
-            }
-        }
+    /**
+     * Gets the current badge text.
+     *
+     * @return The badge text
+     */
+    @Override
+    public String getText() {
+        return super.getText();
     }
 }

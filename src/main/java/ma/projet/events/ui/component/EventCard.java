@@ -1,178 +1,247 @@
 package ma.projet.events.ui.component;
 
-import com.vaadin.flow. component.html.*;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com. vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin. flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component. ClickEvent;
+import com.vaadin.flow.component.ComponentEventListener;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin. flow.component.button.ButtonVariant;
+import com.vaadin.flow.component. html. Div;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin. flow.component.html.Span;
+import com.vaadin. flow.component.icon.Icon;
+import com.vaadin.flow.component.icon. VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component. orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import ma.projet.events.entity.Event;
 
 import java.time.format.DateTimeFormatter;
+import java.util. Locale;
 
 /**
- * Card pour afficher un événement de manière attractive
- * Utilisée dans :  HomeView, EventListView, recherche
+ * Reusable event card component.
  *
- * Affiche :  Image, titre, date, lieu, prix, catégorie, statut
+ * Displays event information in a visually appealing card format:
+ * - Event image with category badge overlay
+ * - Title, date, city, available seats
+ * - Price and "View Details" button
+ *
+ * Usage:
+ * <pre>
+ * Event event = eventService.getEventById(1L);
+ * EventCard card = new EventCard(event);
+ * card.addDetailsClickListener(e -> UI.getCurrent().navigate("event/" + event.getId()));
+ * layout.add(card);
+ * </pre>
+ *
+ * Technical constraints:
+ * - No navigation logic inside the component
+ * - No service/repository calls
+ * - Data provided via constructor
+ * - Click listener registered externally
  */
-public class EventCard extends VerticalLayout {
+public class EventCard extends Div {
 
     private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("dd MMM yyyy à HH:mm");
+            DateTimeFormatter.ofPattern("dd MMM yyyy · HH:mm", Locale.FRENCH);
+
+    private static final String DEFAULT_IMAGE = "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800";
 
     private final Event event;
+    private final Button viewDetailsButton;
 
+    /**
+     * Creates an event card with the provided event data.
+     *
+     * @param event The event entity to display
+     */
     public EventCard(Event event) {
         this.event = event;
 
+        // Apply global card utility class
         addClassName("festivent-card");
-        setSpacing(false);
-        setPadding(false);
-        setWidth("320px");
 
-        // Effet hover
+        // Card styling
         getStyle()
+                .set("display", "flex")
+                .set("flex-direction", "column")
+                .set("width", "320px")
+                .set("overflow", "hidden")
                 .set("cursor", "pointer")
-                .set("transition", "var(--festivent-transition)");
+                .set("transition", "transform 0.2s ease, box-shadow 0.2s ease");
 
-        createContent();
-    }
+        // Hover effect
+        getElement().addEventListener("mouseenter", e -> {
+            getStyle().set("transform", "translateY(-4px)");
+        });
+        getElement().addEventListener("mouseleave", e -> {
+            getStyle().set("transform", "translateY(0)");
+        });
 
-    private void createContent() {
-        // Image de l'événement (placeholder si pas d'image)
-        Div imageContainer = createImageContainer();
+        // Build card sections
+        add(createImageSection(), createContentSection(), createBottomSection());
 
-        // Badge catégorie + statut
-        HorizontalLayout badges = createBadges();
-
-        // Titre
-        H3 title = new H3(event.getTitre());
-        title.getStyle()
-                .set("margin", "0")
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("color", "var(--festivent-text-primary)")
-                .set("padding", "var(--lumo-space-m) var(--lumo-space-m) 0");
-
-        // Infos :  date, lieu, prix
-        VerticalLayout infos = createInfoSection();
-
-        add(imageContainer, badges, title, infos);
+        this.viewDetailsButton = (Button) getChildren()
+                .filter(c -> c instanceof HorizontalLayout)
+                .findFirst()
+                .map(hl -> ((HorizontalLayout) hl).getChildren()
+                        .filter(c -> c instanceof Button)
+                        .findFirst()
+                        .orElse(null))
+                .orElse(null);
     }
 
     /**
-     * Crée le conteneur d'image
+     * Creates the image section with category badge overlay.
      */
-    private Div createImageContainer() {
+    private Div createImageSection() {
         Div imageContainer = new Div();
-        imageContainer.setWidthFull();
-        imageContainer.setHeight("180px");
-
-        if (event.getImageUrl() != null && !event.getImageUrl().isBlank()) {
-            // Image réelle
-            imageContainer.getStyle()
-                    .set("background-image", "url('" + event.getImageUrl() + "')")
-                    .set("background-size", "cover")
-                    .set("background-position", "center");
-        } else {
-            // Placeholder avec dégradé
-            imageContainer.getStyle()
-                    .set("background", "linear-gradient(135deg, var(--festivent-primary) 0%, var(--festivent-accent) 100%)")
-                    .set("display", "flex")
-                    . set("align-items", "center")
-                    .set("justify-content", "center");
-
-            Span placeholder = new Span(event.getCategorie().getIcon());
-            placeholder.getStyle()
-                    .set("font-size", "48px")
-                    .set("color", "white");
-            imageContainer.add(placeholder);
-        }
-
         imageContainer.getStyle()
-                .set("border-radius", "var(--lumo-border-radius-l) var(--lumo-border-radius-l) 0 0");
+                .set("position", "relative")
+                .set("width", "100%")
+                .set("height", "200px")
+                .set("overflow", "hidden")
+                .set("border-radius", "var(--festivent-radius-lg) var(--festivent-radius-lg) 0 0");
 
-        return imageContainer;
-    }
+        // Event image
+        String imageUrl = (event.getImageUrl() != null && !event.getImageUrl().isBlank())
+                ? event.getImageUrl()
+                : DEFAULT_IMAGE;
 
-    /**
-     * Crée les badges (catégorie + statut)
-     */
-    private HorizontalLayout createBadges() {
-        HorizontalLayout badges = new HorizontalLayout();
-        badges.setWidthFull();
-        badges.setJustifyContentMode(JustifyContentMode. BETWEEN);
-        badges.setPadding(true);
-        badges.getStyle().set("margin-top", "-30px").set("position", "relative");
+        Image image = new Image(imageUrl, event.getTitre());
+        image.getStyle()
+                .set("width", "100%")
+                .set("height", "100%")
+                .set("object-fit", "cover");
 
-        // Badge catégorie
-        Span categoryBadge = new Span(event.getCategorie().getIcon() + " " + event.getCategorie().getLabel());
+        // Category badge (overlay)
+        Span categoryBadge = new Span(
+                event.getCategorie().getIcon() + " " + event.getCategorie().getLabel()
+        );
         categoryBadge.getStyle()
-                .set("background-color", "white")
-                .set("padding", "var(--lumo-space-xs) var(--lumo-space-s)")
-                .set("border-radius", "var(--lumo-border-radius-m)")
+                .set("position", "absolute")
+                .set("top", "var(--festivent-space-md)")
+                .set("left", "var(--festivent-space-md)")
+                .set("background-color", "var(--festivent-primary)")
+                .set("color", "var(--festivent-primary-text)")
+                .set("padding", "var(--festivent-space-xs) var(--festivent-space-sm)")
+                .set("border-radius", "var(--festivent-radius-xl)")
                 .set("font-size", "var(--lumo-font-size-xs)")
                 .set("font-weight", "600")
                 .set("box-shadow", "var(--festivent-shadow-md)");
 
-        // Badge statut
-        StatusBadge statusBadge = new StatusBadge(event. getStatut());
-
-        badges.add(categoryBadge, statusBadge);
-        return badges;
+        imageContainer.add(image, categoryBadge);
+        return imageContainer;
     }
 
     /**
-     * Crée la section informations (date, lieu, prix)
+     * Creates the content section with title and event details.
      */
-    private VerticalLayout createInfoSection() {
-        VerticalLayout infos = new VerticalLayout();
-        infos.setSpacing(true);
-        infos.setPadding(true);
+    private VerticalLayout createContentSection() {
+        VerticalLayout content = new VerticalLayout();
+        content.setSpacing(true);
+        content.setPadding(true);
+        content.getStyle()
+                .set("padding", "var(--festivent-space-lg)")
+                .set("gap", "var(--festivent-space-sm)");
 
-        // Date
-        HorizontalLayout dateLayout = createInfoRow(
-                VaadinIcon.CALENDAR. create(),
+        // Event title
+        H3 title = new H3(event.getTitre());
+        title.getStyle()
+                .set("margin", "0")
+                .set("font-size", "var(--lumo-font-size-l)")
+                .set("font-weight", "700")
+                .set("color", "var(--festivent-secondary-text)")
+                .set("line-height", "1.3");
+
+        // Date and time
+        HorizontalLayout dateInfo = createInfoRow(
+                VaadinIcon.CALENDAR_CLOCK,
                 event.getDateDebut().format(DATE_FORMATTER)
         );
 
-        // Lieu
-        HorizontalLayout lieuLayout = createInfoRow(
-                VaadinIcon. LOCATION_ARROW.create(),
-                event.getLieu() + " - " + event.getVille()
+        // City
+        HorizontalLayout cityInfo = createInfoRow(
+                VaadinIcon.MAP_MARKER,
+                event.getVille()
         );
 
-        // Prix
-        HorizontalLayout prixLayout = createInfoRow(
-                VaadinIcon. MONEY. create(),
-                event.getPrixUnitaire() + " DH"
+        // Available seats (placeholder - actual calculation should be done by service)
+        HorizontalLayout seatsInfo = createInfoRow(
+                VaadinIcon.USERS,
+                event.getCapaciteMax() + " places"
         );
-        prixLayout.getStyle().set("color", "var(--festivent-accent)").set("font-weight", "600");
 
-        infos.add(dateLayout, lieuLayout, prixLayout);
-        return infos;
+        content.add(title, dateInfo, cityInfo, seatsInfo);
+        return content;
     }
 
     /**
-     * Crée une ligne d'info (icône + texte)
+     * Creates an info row with icon and text.
      */
-    private HorizontalLayout createInfoRow(com.vaadin.flow.component. icon.Icon icon, String text) {
-        HorizontalLayout row = new HorizontalLayout();
-        row.setSpacing(true);
-        row.setAlignItems(Alignment.CENTER);
-
+    private HorizontalLayout createInfoRow(VaadinIcon iconType, String text) {
+        Icon icon = iconType.create();
         icon.setSize("16px");
-        icon.getStyle().set("color", "var(--festivent-text-secondary)");
+        icon.getStyle().set("color", "var(--lumo-secondary-text-color)");
 
         Span textSpan = new Span(text);
         textSpan.getStyle()
                 .set("font-size", "var(--lumo-font-size-s)")
-                .set("color", "var(--festivent-text-secondary)");
+                .set("color", "var(--lumo-secondary-text-color)");
 
-        row.add(icon, textSpan);
+        HorizontalLayout row = new HorizontalLayout(icon, textSpan);
+        row.setAlignItems(FlexComponent.Alignment.CENTER);
+        row.setSpacing(true);
+        row.getStyle()
+                .set("gap", "var(--festivent-space-xs)")
+                .set("margin", "0");
+
         return row;
     }
 
     /**
-     * Récupère l'événement associé
+     * Creates the bottom section with price and action button.
+     */
+    private HorizontalLayout createBottomSection() {
+        HorizontalLayout bottom = new HorizontalLayout();
+        bottom.setWidthFull();
+        bottom.setAlignItems(FlexComponent.Alignment.CENTER);
+        bottom.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        bottom.getStyle()
+                .set("padding", "0 var(--festivent-space-lg) var(--festivent-space-lg)")
+                .set("border-top", "1px solid var(--festivent-secondary)");
+
+        // Price
+        Span price = new Span(String.format("%. 2f DH", event.getPrixUnitaire()));
+        price.getStyle()
+                .set("font-size", "var(--lumo-font-size-xl)")
+                .set("font-weight", "700")
+                .set("color", "var(--festivent-primary)");
+
+        // View Details button
+        Button viewDetails = new Button("View Details");
+        viewDetails.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        viewDetails.getStyle().set("cursor", "pointer");
+
+        bottom.add(price, viewDetails);
+        return bottom;
+    }
+
+    /**
+     * Registers a click listener for the "View Details" button.
+     *
+     * @param listener The listener to invoke when the button is clicked
+     */
+    public void addDetailsClickListener(ComponentEventListener<ClickEvent<Button>> listener) {
+        if (viewDetailsButton != null) {
+            viewDetailsButton.addClickListener(listener);
+        }
+    }
+
+    /**
+     * Gets the associated event entity.
+     *
+     * @return The event
      */
     public Event getEvent() {
         return event;
