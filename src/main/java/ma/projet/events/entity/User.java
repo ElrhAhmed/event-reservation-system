@@ -84,7 +84,10 @@ public class User {
      * Obtenir le nom complet de l'utilisateur
      */
     public String getNomComplet() {
-        return prenom + " " + nom;
+        String p = (prenom != null) ? prenom : "";
+        String n = (nom != null) ? nom : "";
+        String fullName = (p + " " + n).trim();
+        return fullName. isEmpty() ? email : fullName;
     }
 
     /**

@@ -21,6 +21,54 @@ html {
     --festivent-accent: #e7f0fe;
     --festivent-accent-text: #073c92;
 
+    /* ========== ADDITIONAL COLORS ========== */
+    --festivent-surface: #ffffff;
+    --festivent-border: #e5e7eb;
+    --festivent-error: #dc3545;
+    --festivent-success:  #28a745;
+    --festivent-warning: #ffc107;
+
+    /* ========== TRANSITIONS ========== */
+    --festivent-transition-fast: 0.15s ease;
+    --festivent-transition-normal: 0.25s ease;
+
+    /* ------------------------------------
+   6. SIDE NAVIGATION (MainLayout)
+   ------------------------------------ */
+
+    /* Drawer background */
+    vaadin-app-layout::part(drawer) {
+        background-color: var(--festivent-surface);
+        border-right: 1px solid var(--festivent-border);
+    }
+
+    /* Side nav items */
+    vaadin-side-nav-item {
+        border-radius: var(--festivent-radius-md);
+        margin:  2px var(--festivent-space-xs);
+        transition: all var(--festivent-transition-fast);
+    }
+
+    vaadin-side-nav-item:hover {
+        background-color:  var(--festivent-accent);
+    }
+
+    vaadin-side-nav-item[active] {
+        background-color: var(--festivent-accent);
+        color: var(--festivent-primary);
+        font-weight: 600;
+    }
+
+    vaadin-side-nav-item[active]::before {
+        background-color: var(--festivent-primary);
+    }
+
+    /* Header styling */
+    vaadin-app-layout::part(navbar) {
+        background-color: var(--festivent-surface);
+        box-shadow: var(--festivent-shadow-sm);
+    }
+
     /* ========== SHADOWS (SOFT & SUBTLE) ========== */
     --festivent-shadow-sm: 0 1px 3px 0 rgba(11, 100, 244, 0.08);
     --festivent-shadow-md: 0 4px 12px 0 rgba(11, 100, 244, 0.12);
