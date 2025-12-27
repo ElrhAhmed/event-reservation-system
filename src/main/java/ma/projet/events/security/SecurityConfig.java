@@ -17,57 +17,39 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Configuration des autorisations
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ VAADIN - Ressources internes (TRÈS IMPORTANT)
                         .requestMatchers(
                                 "/VAADIN/**",
                                 "/vaadinServlet/**",
                                 "/frontend/**",
                                 "/frontend-es5/**",
-                                "/frontend-es6/**"
-                        ).permitAll()
-
-                        // ✅ Routes publiques
-                        .requestMatchers(
-                                "/",
-                                "/login",
-                                "/register",
-                                "/h2-console/**",
+                                "/frontend-es6/**",
                                 "/images/**",
                                 "/styles/**",
                                 "/icons/**",
-                                "/favicon.ico"
+                                "/favicon.ico",
+                                "/",
+                                "/login",
+                                "/register",
+                                "/h2-console/**"
                         ).permitAll()
-
-                        // Routes protégées
                         .anyRequest().authenticated()
                 )
 
-                // Configuration du formulaire de login
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
                         .permitAll()
                 )
 
-                // Configuration de la déconnexion
-                .logout(logout -> logout
-                        .logoutSuccessUrl("/login")
-                        .permitAll()
-                )
+                .logout(logout -> logout.permitAll())
 
-                // Désactiver CSRF pour H2 console et Vaadin (développement uniquement)
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**")
-                        .ignoringRequestMatchers("/**") // ⚠️ À RETIRER EN PRODUCTION
-                )
+                .csrf(csrf -> csrf.disable())
 
-                // Autoriser les frames pour H2 console
-                .headers(headers -> headers
-                        .frameOptions(frameOptions -> frameOptions. sameOrigin())
+                .headers(headers ->
+                        headers.frameOptions(frame -> frame.sameOrigin())
                 );
 
         return http.build();
     }
+
 }

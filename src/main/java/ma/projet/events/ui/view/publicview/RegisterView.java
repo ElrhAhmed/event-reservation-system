@@ -1,251 +1,221 @@
 package ma.projet.events.ui.view.publicview;
 
-import com.vaadin.flow.component. UI;
-import com.vaadin. flow.component.button.Button;
+import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin. flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com. vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield. PasswordField;
-import com. vaadin.flow.component.textfield.TextField;
-import com. vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.data.binder.ValidationException;
-import com.vaadin.flow.data.validator.EmailValidator;
-import com.vaadin. flow.router.PageTitle;
+import com.vaadin.flow.component.textfield.PasswordField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow. router.RouterLink;
-import com. vaadin.flow.server.auth.AnonymousAllowed;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
+import ma.projet.events.entity.Role;
 import ma.projet.events.entity.User;
+import ma.projet.events.exception.BusinessException;
+import ma.projet.events.exception.ConflictException;
 import ma.projet.events.service.UserService;
+import ma.projet.events.ui.layout.AuthLayout;
 
-/**
- * Page d'inscription
- * Route : /register
- *
- * Permet à un nouvel utilisateur de créer un compte
- * Validation complète des champs
- */
-@Route("register")
-@PageTitle("Inscription - Festivent")
+@Route(value = "register", layout = AuthLayout.class)
+@PageTitle("Create Account - EventReserve")
 @AnonymousAllowed
-public class RegisterView extends VerticalLayout {
+public class RegisterView extends Div {
 
     private final UserService userService;
-    private final Binder<User> binder = new Binder<>(User.class);
-
-    // Champs du formulaire
-    private final TextField nomField = new TextField("Nom");
-    private final TextField prenomField = new TextField("Prénom");
-    private final EmailField emailField = new EmailField("Email");
-    private final TextField telephoneField = new TextField("Téléphone (optionnel)");
-    private final PasswordField passwordField = new PasswordField("Mot de passe");
-    private final PasswordField confirmPasswordField = new PasswordField("Confirmer le mot de passe");
-    private final Button registerButton = new Button("S'inscrire");
 
     public RegisterView(UserService userService) {
         this.userService = userService;
 
-        // Configuration de la vue
-        setSizeFull();
-        setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode. CENTER);
-        getStyle()
-                .set("background", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)")
-                .set("padding", "var(--lumo-space-m)");
+        /* =========================
+           CARD
+           ========================= */
+        Div card = new Div();
+        card.addClassName("festivent-card");
+        card.getStyle()
+                .set("width", "100%")
+                .set("max-width", "520px")
+                .set("padding", "2.5rem 2.25rem");
 
-        // Créer le contenu
-        createContent();
+        VerticalLayout content = new VerticalLayout();
+        content.setPadding(false);
+        content.setSpacing(false);
+        content.setWidthFull();
+        content.setAlignItems(FlexComponent.Alignment.CENTER);
+        content.getStyle().set("gap", "1.4rem");
 
-        // Configurer la validation
-        configureValidation();
-    }
+        /* =========================
+           HEADER
+           ========================= */
+        Icon icon = VaadinIcon.CALENDAR.create();
+        icon.setSize("42px");
+        icon.getStyle().set("color", "var(--festivent-primary)");
 
-    /**
-     * Crée le contenu de la page d'inscription
-     */
-    private void createContent() {
-        // Container principal
-        VerticalLayout container = new VerticalLayout();
-        container.setWidth("500px");
-        container.setPadding(true);
-        container. setSpacing(true);
-        container.getStyle()
-                .set("background-color", "white")
-                .set("border-radius", "12px")
-                .set("box-shadow", "0 10px 40px rgba(0,0,0,0.2)");
+        H2 title = new H2("Create Account");
+        title.getStyle()
+                .set("margin", "0")
+                .set("font-weight", "700")
+                .set("font-size", "2rem")
+                .set("color", "var(--festivent-secondary-text)");
 
-        // Logo et titre
-        H1 logo = new H1("🎉 Festivent");
-        logo.getStyle()
-                .set("color", "#667eea")
-                .set("text-align", "center")
-                .set("margin", "0 0 var(--lumo-space-s) 0")
-                .set("font-weight", "700");
-
-        Paragraph subtitle = new Paragraph("Créez votre compte gratuitement");
+        Span subtitle = new Span("Join EventReserve to discover and book events");
         subtitle.getStyle()
-                .set("color", "#64748b")
-                .set("text-align", "center")
-                .set("margin", "0 0 var(--lumo-space-l) 0");
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-size", "1rem");
 
-        // Formulaire
-        FormLayout formLayout = new FormLayout();
-        formLayout.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("500px", 2)
+        /* =========================
+           FORM GRID
+           ========================= */
+        Div formGrid = new Div();
+        formGrid.addClassName("festivent-form-grid");
+
+        TextField firstName = new TextField("First Name");
+        firstName.setRequired(true);
+        firstName.setWidthFull();
+
+        TextField lastName = new TextField("Last Name");
+        lastName.setRequired(true);
+        lastName.setWidthFull();
+
+        EmailField email = new EmailField("Email");
+        email.setRequired(true);
+        email.setWidthFull();
+
+        TextField phone = new TextField("Phone (optional)");
+        phone.setWidthFull();
+
+        PasswordField password = new PasswordField("Password");
+        password.setRequired(true);
+        password.setRevealButtonVisible(true);
+        password.setWidthFull();
+
+        PasswordField confirmPassword = new PasswordField("Confirm Password");
+        confirmPassword.setRequired(true);
+        confirmPassword.setRevealButtonVisible(true);
+        confirmPassword.setWidthFull();
+
+        formGrid.add(
+                firstName,
+                lastName,
+                email,
+                phone,
+                password,
+                confirmPassword
         );
 
-        // Configuration des champs
-        nomField.setRequired(true);
-        nomField.setPlaceholder("Votre nom");
+        /* =========================
+           SUBMIT BUTTON
+           ========================= */
+        Button createAccount = new Button("Create Account");
+        createAccount.setWidthFull();
+        createAccount.addThemeVariants(
+                ButtonVariant.LUMO_PRIMARY,
+                ButtonVariant.LUMO_LARGE
+        );
 
-        prenomField.setRequired(true);
-        prenomField. setPlaceholder("Votre prénom");
+        createAccount.addClickListener(e -> {
 
-        emailField.setRequired(true);
-        emailField.setPlaceholder("votre@email.com");
+            // Validation UI simple
+            if (firstName.isEmpty() || lastName.isEmpty()
+                    || email.isEmpty()
+                    || password.isEmpty()
+                    || confirmPassword.isEmpty()) {
 
-        telephoneField.setPlaceholder("+212 6XX XX XX XX");
+                Notification.show(
+                        "Please fill in all required fields",
+                        3500,
+                        Notification.Position.TOP_CENTER
+                );
+                return;
+            }
 
-        passwordField.setRequired(true);
-        passwordField.setHelperText("Minimum 8 caractères");
+            if (!password.getValue().equals(confirmPassword.getValue())) {
+                Notification.show(
+                        "Passwords do not match",
+                        3500,
+                        Notification.Position.TOP_CENTER
+                );
+                return;
+            }
 
-        confirmPasswordField.setRequired(true);
+            try {
+                // Construire l'utilisateur
+                User user = new User();
+                user.setPrenom(firstName.getValue());
+                user.setNom(lastName.getValue());
+                user.setEmail(email.getValue());
+                user.setTelephone(phone.getValue());
+                user.setPassword(password.getValue());
+                user.setRole(Role.CLIENT); // inscription publique
 
-        // Ajouter les champs au formulaire
-        formLayout.add(nomField, prenomField);
-        formLayout.add(emailField, 2);
-        formLayout.add(telephoneField, 2);
-        formLayout.add(passwordField, confirmPasswordField);
+                // 🔐 Enregistrement réel en base
+                userService.register(user);
 
-        // Bouton d'inscription
-        registerButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
-        registerButton.getStyle()
-                .set("width", "100%")
-                .set("margin-top", "var(--lumo-space-m)")
-                .set("background", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)")
-                .set("border", "none");
+                Notification.show(
+                        "Account created successfully. Please sign in.",
+                        2500,
+                        Notification.Position.TOP_CENTER
+                );
 
-        registerButton.addClickListener(e -> handleRegister());
+                // 🔁 Redirection vers login
+                UI.getCurrent().navigate("login");
 
-        // Lien vers la connexion
-        Div loginSection = new Div();
-        loginSection.getStyle()
-                .set("text-align", "center")
-                .set("margin-top", "var(--lumo-space-m)");
+            } catch (ConflictException ex) {
+                Notification.show(
+                        ex.getMessage(),
+                        4000,
+                        Notification.Position.TOP_CENTER
+                );
+            } catch (BusinessException ex) {
+                Notification.show(
+                        ex.getMessage(),
+                        4000,
+                        Notification.Position.TOP_CENTER
+                );
+            } catch (Exception ex) {
+                Notification.show(
+                        "Unexpected error occurred. Please try again.",
+                        4000,
+                        Notification.Position.TOP_CENTER
+                );
+            }
+        });
 
-        Span loginText = new Span("Déjà un compte ? ");
-        loginText.getStyle().set("color", "#64748b");
+        /* =========================
+           FOOTER LINK
+           ========================= */
+        Span loginPrompt = new Span();
+        loginPrompt.getStyle()
+                .set("margin-top", "1.5rem")
+                .set("font-size", "1rem");
 
-        RouterLink loginLink = new RouterLink("Se connecter", ma.projet.events.ui.view.publicview.LoginView.class);
+        Anchor loginLink = new Anchor("login", "Sign in");
         loginLink.getStyle()
-                .set("color", "#667eea")
+                .set("color", "var(--festivent-primary)")
                 .set("font-weight", "600")
                 .set("text-decoration", "none");
 
-        loginSection.add(loginText, loginLink);
+        loginPrompt.add(new Text("Already have an account? "), loginLink);
 
-        // Ajouter les composants
-        container.add(logo, subtitle, formLayout, registerButton, loginSection);
+        /* =========================
+           ASSEMBLY
+           ========================= */
+        content.add(
+                icon,
+                title,
+                subtitle,
+                formGrid,
+                createAccount,
+                loginPrompt
+        );
 
-        add(container);
-    }
-
-    /**
-     * Configure la validation des champs
-     */
-    private void configureValidation() {
-        // Validation du nom
-        binder.forField(nomField)
-                .asRequired("Le nom est obligatoire")
-                .withValidator(nom -> nom.length() >= 2, "Le nom doit contenir au moins 2 caractères")
-                .bind(User::getNom, User::setNom);
-
-        // Validation du prénom
-        binder.forField(prenomField)
-                .asRequired("Le prénom est obligatoire")
-                .withValidator(prenom -> prenom.length() >= 2, "Le prénom doit contenir au moins 2 caractères")
-                .bind(User::getPrenom, User::setPrenom);
-
-        // Validation de l'email
-        binder.forField(emailField)
-                .asRequired("L'email est obligatoire")
-                .withValidator(new EmailValidator("Email invalide"))
-                .bind(User::getEmail, User::setEmail);
-
-        // Validation du téléphone (optionnel)
-        binder.forField(telephoneField)
-                .bind(User::getTelephone, User::setTelephone);
-
-        // Validation du mot de passe
-        binder.forField(passwordField)
-                .asRequired("Le mot de passe est obligatoire")
-                .withValidator(
-                        password -> password.length() >= 8,
-                        "Le mot de passe doit contenir au moins 8 caractères"
-                )
-                .bind(User::getPassword, User:: setPassword);
-
-        // Validation de la confirmation
-        binder.forField(confirmPasswordField)
-                .asRequired("Veuillez confirmer le mot de passe")
-                .withValidator(
-                        confirm -> confirm.equals(passwordField.getValue()),
-                        "Les mots de passe ne correspondent pas"
-                )
-                .bind(
-                        user -> passwordField.getValue(), // getter (pas utilisé)
-                        (user, value) -> {} // setter vide (pas besoin de stocker)
-                );
-    }
-
-    /**
-     * Gère la soumission du formulaire d'inscription
-     */
-    private void handleRegister() {
-        try {
-            // Créer un nouvel utilisateur
-            User user = new User();
-
-            // Valider et remplir l'utilisateur
-            binder. writeBean(user);
-
-            // Enregistrer l'utilisateur (le mot de passe sera hashé automatiquement)
-            userService. register(user);
-
-            // Notification de succès
-            Notification notification = Notification.show(
-                    "✅ Compte créé avec succès !  Vous pouvez maintenant vous connecter.",
-                    5000,
-                    Notification.Position.TOP_CENTER
-            );
-            notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-
-            // Rediriger vers la page de connexion après 1 seconde
-            UI.getCurrent().getPage().executeJs(
-                    "setTimeout(() => window.location.href = 'login', 1000)"
-            );
-
-        } catch (ValidationException e) {
-            // Erreur de validation
-            Notification notification = Notification.show(
-                    "❌ Veuillez corriger les erreurs dans le formulaire",
-                    3000,
-                    Notification.Position.TOP_CENTER
-            );
-            notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-
-        } catch (Exception e) {
-            // Autre erreur (email déjà utilisé, etc.)
-            Notification notification = Notification.show(
-                    "❌ " + e.getMessage(),
-                    4000,
-                    Notification. Position.TOP_CENTER
-            );
-            notification.addThemeVariants(NotificationVariant. LUMO_ERROR);
-        }
+        card.add(content);
+        add(card);
     }
 }

@@ -185,6 +185,31 @@ body {
     box-shadow: var(--festivent-shadow-lg);
 }
 
+.festivent-form-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Champs qui doivent prendre toute la largeur */
+.festivent-form-grid vaadin-email-field,
+.festivent-form-grid vaadin-text-area {
+    grid-column: span 2;
+}
+
+/* Responsive mobile */
+@media (max-width: 640px) {
+    .festivent-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .festivent-form-grid vaadin-email-field,
+    .festivent-form-grid vaadin-text-area {
+        grid-column: span 1;
+    }
+}
+
 /* ------------------------------------
    5. VAADIN COMPONENT REFINEMENTS
    ------------------------------------ */

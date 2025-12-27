@@ -1,22 +1,23 @@
 package ma.projet.events.ui.component;
 
-import com.vaadin.flow.component. ClickEvent;
+import com.vaadin.flow. component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin. flow.component.button.ButtonVariant;
-import com.vaadin.flow.component. html. Div;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin. flow.component.html.Span;
-import com.vaadin. flow.component.icon.Icon;
+import com.vaadin.flow.component. button.Button;
+import com. vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component. html.Div;
+import com.vaadin.flow.component. html.H3;
+import com.vaadin.flow.component. html.Image;
+import com. vaadin.flow.component.html.Span;
+import com. vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon. VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component. orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component. orderedlayout.FlexComponent;
+import com.vaadin. flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import lombok.Getter;
 import ma.projet.events.entity.Event;
 
 import java.time.format.DateTimeFormatter;
-import java.util. Locale;
+import java.util.Locale;
 
 /**
  * Reusable event card component.
@@ -30,7 +31,7 @@ import java.util. Locale;
  * <pre>
  * Event event = eventService.getEventById(1L);
  * EventCard card = new EventCard(event);
- * card.addDetailsClickListener(e -> UI.getCurrent().navigate("event/" + event.getId()));
+ * card.addDetailsClickListener(e -> UI.getCurrent().navigate("event/" + event. getId()));
  * layout.add(card);
  * </pre>
  *
@@ -43,12 +44,18 @@ import java.util. Locale;
 public class EventCard extends Div {
 
     private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("dd MMM yyyy · HH:mm", Locale.FRENCH);
+            DateTimeFormatter.ofPattern("dd MMM yyyy · HH: mm", Locale.FRENCH);
 
     private static final String DEFAULT_IMAGE = "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800";
 
+    /**
+     * -- GETTER --
+     *  Gets the associated event entity.
+     *
+     */
+    @Getter
     private final Event event;
-    private final Button viewDetailsButton;
+    private Button viewDetailsButton;
 
     /**
      * Creates an event card with the provided event data.
@@ -66,29 +73,27 @@ public class EventCard extends Div {
                 .set("display", "flex")
                 .set("flex-direction", "column")
                 .set("width", "320px")
+                .set("background-color", "white")
+                .set("border-radius", "var(--festivent-radius-lg)")
+                .set("box-shadow", "var(--festivent-shadow-md)")
                 .set("overflow", "hidden")
                 .set("cursor", "pointer")
                 .set("transition", "transform 0.2s ease, box-shadow 0.2s ease");
 
         // Hover effect
         getElement().addEventListener("mouseenter", e -> {
-            getStyle().set("transform", "translateY(-4px)");
+            getStyle()
+                    .set("transform", "translateY(-4px)")
+                    .set("box-shadow", "var(--festivent-shadow-xl)");
         });
         getElement().addEventListener("mouseleave", e -> {
-            getStyle().set("transform", "translateY(0)");
+            getStyle()
+                    .set("transform", "translateY(0)")
+                    .set("box-shadow", "var(--festivent-shadow-md)");
         });
 
         // Build card sections
         add(createImageSection(), createContentSection(), createBottomSection());
-
-        this.viewDetailsButton = (Button) getChildren()
-                .filter(c -> c instanceof HorizontalLayout)
-                .findFirst()
-                .map(hl -> ((HorizontalLayout) hl).getChildren()
-                        .filter(c -> c instanceof Button)
-                        .findFirst()
-                        .orElse(null))
-                .orElse(null);
     }
 
     /**
@@ -100,8 +105,7 @@ public class EventCard extends Div {
                 .set("position", "relative")
                 .set("width", "100%")
                 .set("height", "200px")
-                .set("overflow", "hidden")
-                .set("border-radius", "var(--festivent-radius-lg) var(--festivent-radius-lg) 0 0");
+                .set("overflow", "hidden");
 
         // Event image
         String imageUrl = (event.getImageUrl() != null && !event.getImageUrl().isBlank())
@@ -120,15 +124,15 @@ public class EventCard extends Div {
         );
         categoryBadge.getStyle()
                 .set("position", "absolute")
-                .set("top", "var(--festivent-space-md)")
-                .set("left", "var(--festivent-space-md)")
+                .set("top", "1rem")
+                .set("left", "1rem")
                 .set("background-color", "var(--festivent-primary)")
-                .set("color", "var(--festivent-primary-text)")
-                .set("padding", "var(--festivent-space-xs) var(--festivent-space-sm)")
-                .set("border-radius", "var(--festivent-radius-xl)")
-                .set("font-size", "var(--lumo-font-size-xs)")
+                .set("color", "white")
+                .set("padding", "0.25rem 0.75rem")
+                .set("border-radius", "1rem")
+                .set("font-size", "0.75rem")
                 .set("font-weight", "600")
-                .set("box-shadow", "var(--festivent-shadow-md)");
+                .set("box-shadow", "0 2px 8px rgba(0,0,0,0.15)");
 
         imageContainer.add(image, categoryBadge);
         return imageContainer;
@@ -142,17 +146,22 @@ public class EventCard extends Div {
         content.setSpacing(true);
         content.setPadding(true);
         content.getStyle()
-                .set("padding", "var(--festivent-space-lg)")
-                .set("gap", "var(--festivent-space-sm)");
+                .set("padding", "1rem")
+                .set("gap", "0.5rem");
 
         // Event title
         H3 title = new H3(event.getTitre());
         title.getStyle()
                 .set("margin", "0")
-                .set("font-size", "var(--lumo-font-size-l)")
+                .set("font-size", "1.125rem")
                 .set("font-weight", "700")
                 .set("color", "var(--festivent-secondary-text)")
-                .set("line-height", "1.3");
+                .set("line-height", "1.3")
+                .set("overflow", "hidden")
+                .set("text-overflow", "ellipsis")
+                .set("display", "-webkit-box")
+                .set("-webkit-line-clamp", "2")
+                .set("-webkit-box-orient", "vertical");
 
         // Date and time
         HorizontalLayout dateInfo = createInfoRow(
@@ -166,7 +175,7 @@ public class EventCard extends Div {
                 event.getVille()
         );
 
-        // Available seats (placeholder - actual calculation should be done by service)
+        // Available seats
         HorizontalLayout seatsInfo = createInfoRow(
                 VaadinIcon.USERS,
                 event.getCapaciteMax() + " places"
@@ -186,14 +195,14 @@ public class EventCard extends Div {
 
         Span textSpan = new Span(text);
         textSpan.getStyle()
-                .set("font-size", "var(--lumo-font-size-s)")
+                .set("font-size", "0.875rem")
                 .set("color", "var(--lumo-secondary-text-color)");
 
         HorizontalLayout row = new HorizontalLayout(icon, textSpan);
-        row.setAlignItems(FlexComponent.Alignment.CENTER);
+        row.setAlignItems(FlexComponent. Alignment.CENTER);
         row.setSpacing(true);
         row.getStyle()
-                .set("gap", "var(--festivent-space-xs)")
+                .set("gap", "0.5rem")
                 .set("margin", "0");
 
         return row;
@@ -208,23 +217,36 @@ public class EventCard extends Div {
         bottom.setAlignItems(FlexComponent.Alignment.CENTER);
         bottom.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
         bottom.getStyle()
-                .set("padding", "0 var(--festivent-space-lg) var(--festivent-space-lg)")
-                .set("border-top", "1px solid var(--festivent-secondary)");
+                .set("padding", "1rem")
+                .set("border-top", "1px solid #e5e7eb");
 
-        // Price
-        Span price = new Span(String.format("%. 2f DH", event.getPrixUnitaire()));
+        // ✅ CORRECTION ICI - Formatage sécurisé du prix
+        Span price = new Span(formatPrice(event.getPrixUnitaire()));
         price.getStyle()
-                .set("font-size", "var(--lumo-font-size-xl)")
+                .set("font-size", "1.25rem")
                 .set("font-weight", "700")
                 .set("color", "var(--festivent-primary)");
 
         // View Details button
-        Button viewDetails = new Button("View Details");
-        viewDetails.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        viewDetails.getStyle().set("cursor", "pointer");
+        viewDetailsButton = new Button("View Details");
+        viewDetailsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        viewDetailsButton.getStyle().set("cursor", "pointer");
 
-        bottom.add(price, viewDetails);
+        bottom.add(price, viewDetailsButton);
         return bottom;
+    }
+
+    /**
+     * ✅ NOUVELLE MÉTHODE - Formate le prix de manière sécurisée.
+     */
+    private String formatPrice(Double price) {
+        if (price == null) {
+            return "Prix non défini";
+        }
+        if (price == 0.0) {
+            return "Gratuit";
+        }
+        return String.format("%.2f DH", price);
     }
 
     /**
@@ -238,12 +260,4 @@ public class EventCard extends Div {
         }
     }
 
-    /**
-     * Gets the associated event entity.
-     *
-     * @return The event
-     */
-    public Event getEvent() {
-        return event;
-    }
 }
