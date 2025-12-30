@@ -1,13 +1,13 @@
 package ma.projet.events.service;
 
 import ma.projet.events.entity.*;
-import ma.projet.events. exception.*;
-import ma.projet. events.repository.*;
-import org. springframework.security.crypto.password.PasswordEncoder;
+import ma.projet.events.exception.*;
+import ma.projet.events.repository.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time. LocalDateTime;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +25,7 @@ public class UserService {
                        PasswordEncoder passwordEncoder) { // ✅ AJOUTÉ
         this.userRepository = userRepository;
         this.reservationRepository = reservationRepository;
-        this. eventRepository = eventRepository;
+        this.eventRepository = eventRepository;
         this.passwordEncoder = passwordEncoder; // ✅ AJOUTÉ
     }
 
@@ -79,10 +79,10 @@ public class UserService {
         }
 
         // ✅ MODIFIÉ : Hasher le mot de passe avec BCrypt
-        user.setPassword(passwordEncoder.encode(user. getPassword()));
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         // 6. Sauvegarder
-        User savedUser = userRepository. save(user);
+        User savedUser = userRepository.save(user);
 
         System.out.println("✅ Nouvel utilisateur inscrit : " + savedUser.getEmail());
 
@@ -132,12 +132,12 @@ public class UserService {
                 .orElseThrow(() -> new UnauthorizedException("Email ou mot de passe incorrect"));
 
         // 2. Vérifier que le compte est actif
-        if (! user.isActif()) {
+        if (!user.isActif()) {
             throw new UnauthorizedException("Votre compte a été désactivé. Contactez l'administrateur.");
         }
 
         // 3. ✅ MODIFIÉ :  Vérifier le mot de passe avec BCrypt
-        if (! passwordEncoder.matches(password, user.getPassword())) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new UnauthorizedException("Email ou mot de passe incorrect");
         }
 
@@ -164,7 +164,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'ID : " + userId));
 
         // 2. Vérifier les droits (seulement son propre profil, sauf ADMIN)
-        if (!userId. equals(currentUserId)) {
+        if (!userId.equals(currentUserId)) {
             // TODO : Plus tard, autoriser si currentUser est ADMIN
             throw new UnauthorizedException("Vous ne pouvez modifier que votre propre profil");
         }
@@ -173,7 +173,7 @@ public class UserService {
         if (updatedUser.getNom() != null && !updatedUser.getNom().isBlank()) {
             user.setNom(updatedUser.getNom());
         }
-        if (updatedUser.getPrenom() != null && !updatedUser. getPrenom().isBlank()) {
+        if (updatedUser.getPrenom() != null && !updatedUser.getPrenom().isBlank()) {
             user.setPrenom(updatedUser.getPrenom());
         }
         if (updatedUser.getTelephone() != null) {
@@ -181,7 +181,7 @@ public class UserService {
         }
 
         // Vérifier que le nouvel email n'est pas déjà pris
-        if (updatedUser.getEmail() != null && ! updatedUser.getEmail().equals(user.getEmail())) {
+        if (updatedUser.getEmail() != null && !updatedUser.getEmail().equals(user.getEmail())) {
             if (userRepository.findByEmail(updatedUser.getEmail()).isPresent()) {
                 throw new ConflictException("Cet email est déjà utilisé par un autre utilisateur");
             }
@@ -213,7 +213,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'ID : " + userId));
 
         // 2. Vérifier les droits
-        if (!userId. equals(currentUserId)) {
+        if (!userId.equals(currentUserId)) {
             throw new UnauthorizedException("Vous ne pouvez changer que votre propre mot de passe");
         }
 
@@ -232,7 +232,7 @@ public class UserService {
 
         userRepository.save(user);
 
-        System.out.println("✅ Mot de passe changé :  " + user.getEmail());
+        System.out.println("✅ Mot de passe changé : " + user.getEmail());
     }
 
     // ==================== MÉTHODE 4 :  DÉSACTIVER COMPTE ====================
@@ -260,7 +260,7 @@ public class UserService {
         }
 
         // 4. Vérifier que le compte n'est pas déjà désactivé
-        if (! user.isActif()) {
+        if (!user.isActif()) {
             throw new BusinessException("Ce compte est déjà désactivé");
         }
 
@@ -290,12 +290,12 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Admin introuvable"));
 
         // 3. Vérifier les droits
-        if (!admin. isAdmin()) {
+        if (!admin.isAdmin()) {
             throw new UnauthorizedException("Seul un administrateur peut activer un compte");
         }
 
         // 4. Vérifier que le compte est désactivé
-        if (user. isActif()) {
+        if (user.isActif()) {
             throw new BusinessException("Ce compte est déjà actif");
         }
 
@@ -333,7 +333,7 @@ public class UserService {
         List<Reservation> reservations = reservationRepository.findByUtilisateurId(userId);
         stats.put("totalReservations", reservations.size());
 
-        long confirmedReservations = reservations. stream()
+        long confirmedReservations = reservations.stream()
                 .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
                 .count();
         stats.put("reservationsConfirmees", confirmedReservations);
@@ -345,11 +345,11 @@ public class UserService {
 
         // Montant total dépensé (réservations confirmées uniquement)
         Double montantTotal = reservationRepository.calculateTotalAmountByUser(userId);
-        stats.put("montantTotalDepense", montantTotal != null ? montantTotal :  0.0);
+        stats.put("montantTotalDepense", montantTotal != null ? montantTotal : 0.0);
 
         // Nombre total de places réservées
         int totalPlaces = reservations.stream()
-                .filter(r -> r.getStatut() == ReservationStatus. CONFIRMEE)
+                .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
                 .mapToInt(Reservation::getNombrePlaces)
                 .sum();
         stats.put("totalPlacesReservees", totalPlaces);
@@ -393,10 +393,18 @@ public class UserService {
         return userRepository.findAll().stream()
                 .filter(u ->
                         u.getNom().toLowerCase().contains(keywordLower) ||
-                                u. getPrenom().toLowerCase().contains(keywordLower) ||
+                                u.getPrenom().toLowerCase().contains(keywordLower) ||
                                 u.getEmail().toLowerCase().contains(keywordLower)
                 )
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void changeUserRole(Long userId, Role newRole) {
+        User user = getUserById(userId);
+        user.setRole(newRole);
+        userRepository.save(user); // Sauvegarde simple
+        System.out.println("✅ Rôle modifié pour " + user.getEmail() + " : " + newRole);
     }
 
     // ==================== MÉTHODE 8 :  FILTRER PAR RÔLE ====================
@@ -419,8 +427,30 @@ public class UserService {
         }
 
         // 2. Filtrer par rôle
+        return userRepository.findByRoleAndActifTrue(role);
+    }
+
+    // ==================== MÉTHODE 9 : LISTE D'UTILISATEURS AVEC FILTRES ====================
+
+    /**
+     * Lister les utilisateurs avec filtres optionnels (rôle, actif, mot-clé nom/prénom/email)
+     * Accessible aux administrateurs
+     */
+    public List<User> listUsersWithFilters(Role role, Boolean actif, String keyword, Long adminId) {
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin introuvable"));
+        if (!admin.isAdmin()) {
+            throw new UnauthorizedException("Seul un administrateur peut lister les utilisateurs avec filtres");
+        }
+
+        String kw = keyword == null ? null : keyword.trim().toLowerCase();
         return userRepository.findAll().stream()
-                .filter(u -> u.getRole() == role)
+                .filter(u -> role == null || u.getRole() == role)
+                .filter(u -> actif == null || u.isActif() == actif)
+                .filter(u -> kw == null ||
+                        (Optional.ofNullable(u.getNom()).orElse("").toLowerCase().contains(kw) ||
+                                Optional.ofNullable(u.getPrenom()).orElse("").toLowerCase().contains(kw) ||
+                                Optional.ofNullable(u.getEmail()).orElse("").toLowerCase().contains(kw)))
                 .collect(Collectors.toList());
     }
 
@@ -444,8 +474,6 @@ public class UserService {
      * Compter les utilisateurs par rôle
      */
     public long countUsersByRole(Role role) {
-        return userRepository.findAll().stream()
-                .filter(u -> u.getRole() == role)
-                .count();
+        return userRepository.countByRole(role);
     }
 }

@@ -1,13 +1,15 @@
-package ma.projet. events.entity;
+package ma.projet.events.entity;
 
-import jakarta. persistence.*;
-import jakarta.validation. constraints. Max;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 
@@ -58,11 +60,13 @@ public class Reservation {
     // Une réservation appartient à un utilisateur
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @ToString.Exclude  // <--- AJOUTE CECI
     private User utilisateur;
 
     // Une réservation concerne un événement
     @ManyToOne
     @JoinColumn(name = "event_id", nullable = false)
+    @ToString.Exclude  // <--- AJOUTE CECI
     private Event evenement;
 
     // ==================== HOOKS ====================
@@ -72,15 +76,47 @@ public class Reservation {
      */
     @PrePersist
     protected void onCreate() {
-        // Définir la date de réservation si non fournie
         if (dateReservation == null) {
             dateReservation = LocalDateTime.now();
         }
-
-        // Définir le statut par défaut si non fourni
         if (statut == null) {
             statut = ReservationStatus.EN_ATTENTE;
         }
+        // Générer un code de réservation si absent (format: EVT-XXXXX)
+        if (codeReservation == null || codeReservation.isBlank()) {
+            codeReservation = generateCodeReservation();
+        }
+        // Calcul automatique du montant total
+        recalcMontantTotalOrThrow();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        // Recalcul si le nombre de places ou le prix de l'événement change
+        recalcMontantTotalOrThrow();
+    }
+
+    private void recalcMontantTotalOrThrow() {
+        Double prix = (evenement != null) ? evenement.getPrixUnitaire() : null;
+        if (nombrePlaces == null || nombrePlaces < 1) {
+            throw new IllegalStateException("Le nombre de places doit être strictement positif pour calculer le montant total");
+        }
+        if (prix == null) {
+            throw new IllegalStateException("Le prix unitaire de l'événement est requis pour calculer le montant total");
+        }
+        this.montantTotal = prix * nombrePlaces;
+    }
+
+    private String generateCodeReservation() {
+        // Génère 5 caractères alphanumériques en majuscule
+        final String prefix = "EVT-";
+        final String alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        SecureRandom rnd = new SecureRandom();
+        StringBuilder sb = new StringBuilder(5);
+        for (int i = 0; i < 5; i++) {
+            sb.append(alphabet.charAt(rnd.nextInt(alphabet.length())));
+        }
+        return prefix + sb;
     }
 
     // ==================== MÉTHODES UTILITAIRES ====================

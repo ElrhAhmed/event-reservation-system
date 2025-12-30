@@ -1,221 +1,176 @@
 package ma.projet.events.ui.view.publicview;
 
-import com.vaadin.flow.component.Text;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.html.*;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.BeanValidationBinder;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import ma.projet.events.entity.Role;
 import ma.projet.events.entity.User;
-import ma.projet.events.exception.BusinessException;
-import ma.projet.events.exception.ConflictException;
 import ma.projet.events.service.UserService;
-import ma.projet.events.ui.layout.AuthLayout;
+import ma.projet.events.ui.navigation.NavigationManager;
 
-@Route(value = "register", layout = AuthLayout.class)
-@PageTitle("Create Account - EventReserve")
+@Route(value = "register")
+@PageTitle("Inscription | FESTIVENT")
 @AnonymousAllowed
-public class RegisterView extends Div {
+public class RegisterView extends VerticalLayout {
 
     private final UserService userService;
+    private final NavigationManager navigationManager;
 
-    public RegisterView(UserService userService) {
+    private final TextField nom = new TextField("Nom");
+    private final TextField prenom = new TextField("Prénom");
+    private final EmailField email = new EmailField("Email");
+    private final PasswordField password = new PasswordField("Mot de passe");
+    private final PasswordField confirmPassword = new PasswordField("Confirmation");
+    private final Checkbox organizerCheck = new Checkbox("Je suis organisateur");
+    private final Button submitBtn = new Button("S'inscrire");
+    private final Binder<User> binder = new BeanValidationBinder<>(User.class);
+
+    public RegisterView(UserService userService, NavigationManager navigationManager) {
         this.userService = userService;
+        this.navigationManager = navigationManager;
 
-        /* =========================
-           CARD
-           ========================= */
-        Div card = new Div();
-        card.addClassName("festivent-card");
-        card.getStyle()
-                .set("width", "100%")
-                .set("max-width", "520px")
-                .set("padding", "2.5rem 2.25rem");
+        setSizeFull();
+        setAlignItems(Alignment.CENTER);
+        setJustifyContentMode(JustifyContentMode.CENTER);
+        addClassName(LumoUtility.Background.CONTRAST_5);
+        // Réduction du padding global de la page
+        setPadding(false);
 
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(false);
-        content.setWidthFull();
-        content.setAlignItems(FlexComponent.Alignment.CENTER);
-        content.getStyle().set("gap", "1.4rem");
+        // Logo plus compact
+        H1 logo = new H1("FESTIVENT");
+        logo.addClassNames(
+                LumoUtility.TextColor.PRIMARY,
+                LumoUtility.FontSize.XXLARGE,
+                LumoUtility.Margin.Bottom.SMALL // Marge réduite
+        );
+        logo.getStyle().set("cursor", "pointer");
+        logo.addClickListener(e -> navigationManager.goToHome());
 
-        /* =========================
-           HEADER
-           ========================= */
-        Icon icon = VaadinIcon.CALENDAR.create();
-        icon.setSize("42px");
-        icon.getStyle().set("color", "var(--festivent-primary)");
+        VerticalLayout registerCard = createRegisterCard();
 
-        H2 title = new H2("Create Account");
-        title.getStyle()
-                .set("margin", "0")
-                .set("font-weight", "700")
-                .set("font-size", "2rem")
-                .set("color", "var(--festivent-secondary-text)");
+        Button backButton = new Button("Retour accueil", e -> navigationManager.goToHome());
+        backButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        backButton.addClassName(LumoUtility.Margin.Top.SMALL); // Marge réduite
 
-        Span subtitle = new Span("Join EventReserve to discover and book events");
-        subtitle.getStyle()
-                .set("color", "var(--lumo-secondary-text-color)")
-                .set("font-size", "1rem");
+        add(logo, registerCard, backButton);
 
-        /* =========================
-           FORM GRID
-           ========================= */
-        Div formGrid = new Div();
-        formGrid.addClassName("festivent-form-grid");
+        configureBinder();
+    }
 
-        TextField firstName = new TextField("First Name");
-        firstName.setRequired(true);
-        firstName.setWidthFull();
+    private VerticalLayout createRegisterCard() {
+        VerticalLayout card = new VerticalLayout();
+        card.setWidth("100%");
+        card.setMaxWidth("600px"); // Plus large pour accommoder les 2 colonnes
 
-        TextField lastName = new TextField("Last Name");
-        lastName.setRequired(true);
-        lastName.setWidthFull();
+        // Espacement interne réduit pour la compacité
+        card.setSpacing(false);
+        card.setPadding(true);
 
-        EmailField email = new EmailField("Email");
-        email.setRequired(true);
-        email.setWidthFull();
-
-        TextField phone = new TextField("Phone (optional)");
-        phone.setWidthFull();
-
-        PasswordField password = new PasswordField("Password");
-        password.setRequired(true);
-        password.setRevealButtonVisible(true);
-        password.setWidthFull();
-
-        PasswordField confirmPassword = new PasswordField("Confirm Password");
-        confirmPassword.setRequired(true);
-        confirmPassword.setRevealButtonVisible(true);
-        confirmPassword.setWidthFull();
-
-        formGrid.add(
-                firstName,
-                lastName,
-                email,
-                phone,
-                password,
-                confirmPassword
+        card.addClassNames(
+                LumoUtility.Background.BASE,
+                LumoUtility.BoxShadow.MEDIUM, // Ombre moins diffuse
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.Padding.LARGE // Changé de XLARGE à LARGE
         );
 
-        /* =========================
-           SUBMIT BUTTON
-           ========================= */
-        Button createAccount = new Button("Create Account");
-        createAccount.setWidthFull();
-        createAccount.addThemeVariants(
-                ButtonVariant.LUMO_PRIMARY,
-                ButtonVariant.LUMO_LARGE
+        // Header de carte compact
+        H2 title = new H2("Créer un compte");
+        title.addClassNames(LumoUtility.FontSize.XLARGE, LumoUtility.Margin.Bottom.NONE);
+
+        Span subtitle = new Span("Rejoignez la communauté FESTIVENT");
+        subtitle.addClassNames(
+                LumoUtility.TextColor.SECONDARY,
+                LumoUtility.FontSize.SMALL,
+                LumoUtility.Margin.Bottom.MEDIUM
         );
 
-        createAccount.addClickListener(e -> {
+        // --- FORM LAYOUT 2 COLONNES ---
+        FormLayout formLayout = new FormLayout();
+        formLayout.add(prenom, nom, email, password, confirmPassword, organizerCheck);
 
-            // Validation UI simple
-            if (firstName.isEmpty() || lastName.isEmpty()
-                    || email.isEmpty()
-                    || password.isEmpty()
-                    || confirmPassword.isEmpty()) {
+        // Responsive : 1 colonne sur mobile, 2 colonnes sur desktop (>500px)
+        formLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px", 2)
+        );
 
-                Notification.show(
-                        "Please fill in all required fields",
-                        3500,
-                        Notification.Position.TOP_CENTER
-                );
-                return;
-            }
+        // L'email et la checkbox prennent toute la largeur (2 colonnes)
+        formLayout.setColspan(email, 2);
+        formLayout.setColspan(organizerCheck, 2);
 
-            if (!password.getValue().equals(confirmPassword.getValue())) {
-                Notification.show(
-                        "Passwords do not match",
-                        3500,
-                        Notification.Position.TOP_CENTER
-                );
-                return;
-            }
+        // Ajustement des labels pour gagner de la place visuelle
+        password.setHelperText(null); // On enlève le helper text qui prend de la place (validation gérée par binder)
+        password.setPlaceholder("Min 8 caractères");
 
+        // Bouton d'action avec marge au dessus
+        submitBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        submitBtn.setWidthFull();
+        submitBtn.addClassName(LumoUtility.Margin.Top.MEDIUM);
+        submitBtn.addClickListener(e -> register());
+
+        // Footer compact
+        Span hasAccountText = new Span("Déjà inscrit ?");
+        hasAccountText.addClassName(LumoUtility.TextColor.SECONDARY);
+        hasAccountText.getStyle().set("font-size", "var(--lumo-font-size-s)");
+
+        Button loginLink = new Button("Se connecter", e -> navigationManager.goToLogin());
+        loginLink.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_SMALL);
+        loginLink.addClassName(LumoUtility.FontWeight.BOLD);
+
+        HorizontalLayout footer = new HorizontalLayout(hasAccountText, loginLink);
+        footer.setAlignItems(Alignment.CENTER);
+        footer.addClassName(LumoUtility.Margin.Top.SMALL);
+
+        card.add(title, subtitle, formLayout, submitBtn, footer);
+        return card;
+    }
+
+    private void configureBinder() {
+        binder.bindInstanceFields(this);
+    }
+
+    private void register() {
+        String pass = password.getValue();
+        String confirm = confirmPassword.getValue();
+
+        if (pass == null || confirm == null || !pass.equals(confirm)) {
+            confirmPassword.setInvalid(true);
+            confirmPassword.setErrorMessage("Les mots de passe ne correspondent pas");
+            return;
+        } else {
+            confirmPassword.setInvalid(false);
+        }
+
+        User newUser = new User();
+        if (binder.writeBeanIfValid(newUser)) {
             try {
-                // Construire l'utilisateur
-                User user = new User();
-                user.setPrenom(firstName.getValue());
-                user.setNom(lastName.getValue());
-                user.setEmail(email.getValue());
-                user.setTelephone(phone.getValue());
-                user.setPassword(password.getValue());
-                user.setRole(Role.CLIENT); // inscription publique
-
-                // 🔐 Enregistrement réel en base
-                userService.register(user);
-
-                Notification.show(
-                        "Account created successfully. Please sign in.",
-                        2500,
-                        Notification.Position.TOP_CENTER
-                );
-
-                // 🔁 Redirection vers login
-                UI.getCurrent().navigate("login");
-
-            } catch (ConflictException ex) {
-                Notification.show(
-                        ex.getMessage(),
-                        4000,
-                        Notification.Position.TOP_CENTER
-                );
-            } catch (BusinessException ex) {
-                Notification.show(
-                        ex.getMessage(),
-                        4000,
-                        Notification.Position.TOP_CENTER
-                );
-            } catch (Exception ex) {
-                Notification.show(
-                        "Unexpected error occurred. Please try again.",
-                        4000,
-                        Notification.Position.TOP_CENTER
-                );
+                newUser.setRole(organizerCheck.getValue() ? Role.ORGANIZER : Role.CLIENT);
+                userService.register(newUser);
+                Notification.show("Compte créé ! Connectez-vous.", 3000, Notification.Position.TOP_CENTER)
+                        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                navigationManager.goToLogin();
+            } catch (Exception e) {
+                Notification.show(e.getMessage(), 5000, Notification.Position.TOP_CENTER)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
-        });
-
-        /* =========================
-           FOOTER LINK
-           ========================= */
-        Span loginPrompt = new Span();
-        loginPrompt.getStyle()
-                .set("margin-top", "1.5rem")
-                .set("font-size", "1rem");
-
-        Anchor loginLink = new Anchor("login", "Sign in");
-        loginLink.getStyle()
-                .set("color", "var(--festivent-primary)")
-                .set("font-weight", "600")
-                .set("text-decoration", "none");
-
-        loginPrompt.add(new Text("Already have an account? "), loginLink);
-
-        /* =========================
-           ASSEMBLY
-           ========================= */
-        content.add(
-                icon,
-                title,
-                subtitle,
-                formGrid,
-                createAccount,
-                loginPrompt
-        );
-
-        card.add(content);
-        add(card);
+        }
     }
 }

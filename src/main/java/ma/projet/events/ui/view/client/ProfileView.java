@@ -1,549 +1,293 @@
-package ma.projet.events.ui. view.client;
+package ma.projet.events.ui.view.client;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin. flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin. flow.component.html.*;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component. notification.Notification;
-import com.vaadin.flow.component. notification.NotificationVariant;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin. flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component. orderedlayout. VerticalLayout;
-import com.vaadin.flow.component. textfield.EmailField;
-import com.vaadin.flow.component.textfield. PasswordField;
-import com.vaadin. flow.component.textfield.TextField;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.textfield.PasswordField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.BeanValidationBinder;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import jakarta.annotation.security.PermitAll;
-import ma.projet.events. entity.User;
-import ma.projet.events.exception.BusinessException;
-import ma.projet.events. exception.ConflictException;
-import ma.projet. events.exception.UnauthorizedException;
-import ma.projet. events.security.SecurityService;
-import ma. projet.events.service.UserService;
-import ma.projet. events.ui.layout.MainLayout;
+import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.security.RolesAllowed;
+import ma.projet.events.entity.User;
+import ma.projet.events.security.SecurityService;
+import ma.projet.events.service.UserService;
+import ma.projet.events.ui.component.common.ConfirmDialogUtil;
+import ma.projet.events.ui.layout.UserLayout;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
-/**
- * Vue Profil utilisateur
- */
-@Route(value = "client/profile", layout = MainLayout.class)
-@PageTitle("Profile - EventReserve")
-@PermitAll
-public class ProfileView extends VerticalLayout {
+@Route(value = "profile", layout = UserLayout.class)
+@PageTitle("Mon Profil | FESTIVENT")
+public abstract class ProfileView extends VerticalLayout {
 
-    private final SecurityService securityService;
+
     private final UserService userService;
+    private final SecurityService securityService;
+
+    // Binder pour les infos personnelles
+    private final Binder<User> binder = new BeanValidationBinder<>(User.class);
     private User currentUser;
 
     // Champs du formulaire
-    private TextField firstNameField;
-    private TextField lastNameField;
-    private EmailField emailField;
-    private TextField phoneField;
+    private TextField nom;
+    private TextField prenom;
+    private EmailField email;
+    private TextField telephone;
 
-    // Mode édition
-    private boolean isEditMode = false;
-    private Button editButton;
+    // Champs mot de passe
+    private PasswordField oldPassword;
+    private PasswordField newPassword;
+    private PasswordField confirmNewPassword;
 
-    private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    public ProfileView(SecurityService securityService, UserService userService) {
-        this.securityService = securityService;
+    public ProfileView(UserService userService, SecurityService securityService) {
         this.userService = userService;
-        this.currentUser = securityService.getAuthenticatedUser();
+        this.securityService = securityService;
 
-        setSizeFull();
         setPadding(true);
         setSpacing(true);
-        getStyle()
-                .set("background-color", "#f8fafc")
-                .set("padding", "var(--festivent-space-xl)")
-                .set("gap", "var(--festivent-space-lg)");
+        addClassName(LumoUtility.Background.BASE);
+        // Centrer le contenu sur grand écran
+        setMaxWidth("800px"); // Largeur un peu réduite pour faire plus "focus"
+        addClassName(LumoUtility.Margin.Horizontal.AUTO);
 
+        loadCurrentUser();
+
+        if (currentUser == null) {
+            add(new Span("Utilisateur non trouvé. Veuillez vous reconnecter."));
+            return;
+        }
+
+        // Construction de l'UI (SANS les Stats)
         add(
-                createHeaderSection(),
+                createHeader(),
+                // createStatsSection() -> SUPPRIMÉ
                 createPersonalInfoSection(),
-                createAccountStatsSection(),
                 createSecuritySection(),
-                createDangerZoneSection()
+                createDangerZone()
         );
     }
 
-    /**
-     * Section header
-     */
-    private VerticalLayout createHeaderSection() {
-        VerticalLayout header = new VerticalLayout();
-        header.setPadding(false);
-        header.setSpacing(false);
+    private void loadCurrentUser() {
+        var userDetails = securityService.getAuthenticatedUser();
+        if (userDetails != null) {
+            currentUser = userService.getUserByEmail(userDetails.getUsername());
+        }
+    }
 
-        H2 title = new H2("Profile");
-        title.getStyle()
-                .set("margin", "0")
-                .set("font-size", "var(--lumo-font-size-xxl)")
-                .set("font-weight", "700")
-                .set("color", "var(--festivent-secondary-text)");
+    /* =========================
+       1. HEADER
+       ========================= */
+    private HorizontalLayout createHeader() {
+        H2 title = new H2(currentUser.getPrenom() + " " + currentUser.getNom());
+        title.addClassNames(LumoUtility.Margin.Bottom.NONE);
 
-        Span subtitle = new Span("Manage your account settings");
-        subtitle.getStyle()
-                .set("color", "var(--lumo-secondary-text-color)")
-                .set("font-size", "var(--lumo-font-size-m)");
+        Span memberSince = new Span("Membre depuis le " +
+                currentUser.getDateInscription().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
+        memberSince.addClassName(LumoUtility.TextColor.SECONDARY);
 
-        header.add(title, subtitle);
+        VerticalLayout textLayout = new VerticalLayout(title, memberSince);
+        textLayout.setSpacing(false);
+        textLayout.setPadding(false);
+
+        // Avatar (Initiale)
+        Div avatar = new Div();
+        avatar.setText(currentUser.getPrenom().substring(0, 1).toUpperCase());
+        avatar.addClassNames(
+                LumoUtility.Background.PRIMARY,
+                LumoUtility.TextColor.PRIMARY_CONTRAST,
+                LumoUtility.Display.FLEX,
+                LumoUtility.AlignItems.CENTER,
+                LumoUtility.JustifyContent.CENTER,
+                LumoUtility.FontSize.XXLARGE,
+                LumoUtility.FontWeight.BOLD,
+                LumoUtility.BorderRadius.FULL
+        );
+        avatar.setWidth("64px");
+        avatar.setHeight("64px");
+
+        HorizontalLayout header = new HorizontalLayout(avatar, textLayout);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.addClassName(LumoUtility.Margin.Bottom.LARGE);
         return header;
     }
 
-    /**
-     * Section Personal Information
-     */
-    private Div createPersonalInfoSection() {
-        Div card = new Div();
-        card.addClassName("festivent-card");
-        card.getStyle().set("padding", "var(--festivent-space-lg)");
+    /* =========================
+       2. INFO PERSONNELLES
+       ========================= */
+    private VerticalLayout createPersonalInfoSection() {
+        H3 title = new H3("Informations personnelles");
 
-        // Header de la section
-        HorizontalLayout sectionHeader = new HorizontalLayout();
-        sectionHeader. setWidthFull();
-        sectionHeader. setJustifyContentMode(FlexComponent.JustifyContentMode. BETWEEN);
-        sectionHeader.setAlignItems(FlexComponent.Alignment. CENTER);
-        sectionHeader. getStyle().set("margin-bottom", "var(--festivent-space-md)");
+        VerticalLayout card = createCard();
 
-        VerticalLayout titleSection = new VerticalLayout();
-        titleSection.setPadding(false);
-        titleSection. setSpacing(false);
+        nom = new TextField("Nom");
+        prenom = new TextField("Prénom");
+        email = new EmailField("Email");
+        telephone = new TextField("Téléphone");
 
-        H3 sectionTitle = new H3("Personal Information");
-        sectionTitle.getStyle()
-                .set("margin", "0")
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("font-weight", "600")
-                .set("color", "var(--festivent-secondary-text)");
-
-        Span sectionSubtitle = new Span("Update your personal details");
-        sectionSubtitle.getStyle()
-                .set("color", "var(--lumo-secondary-text-color)")
-                .set("font-size", "var(--lumo-font-size-s)");
-
-        titleSection.add(sectionTitle, sectionSubtitle);
-
-        editButton = new Button("Edit");
-        editButton. addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        editButton. getStyle()
-                .set("border", "1px solid var(--festivent-secondary)")
-                .set("border-radius", "var(--festivent-radius-md)");
-        editButton.addClickListener(e -> toggleEditMode());
-
-        sectionHeader.add(titleSection, editButton);
-
-        // Formulaire
-        Div formGrid = new Div();
-        formGrid. getStyle()
-                .set("display", "grid")
-                .set("grid-template-columns", "1fr 1fr")
-                .set("gap", "var(--festivent-space-md)");
-
-        firstNameField = new TextField("First Name");
-        firstNameField. setValue(currentUser.getPrenom() != null ? currentUser.getPrenom() : "");
-        firstNameField.setReadOnly(true);
-        firstNameField.setWidthFull();
-
-        lastNameField = new TextField("Last Name");
-        lastNameField.setValue(currentUser.getNom() != null ? currentUser.getNom() : "");
-        lastNameField. setReadOnly(true);
-        lastNameField.setWidthFull();
-
-        emailField = new EmailField("Email");
-        emailField.setValue(currentUser.getEmail() != null ? currentUser.getEmail() : "");
-        emailField.setReadOnly(true);
-        emailField.setWidthFull();
-        emailField.getStyle().set("grid-column", "span 2");
-
-        phoneField = new TextField("Phone");
-        phoneField.setValue(currentUser.getTelephone() != null ? currentUser.getTelephone() : "");
-        phoneField.setReadOnly(true);
-        phoneField.setWidthFull();
-        phoneField.getStyle().set("grid-column", "span 2");
-
-        formGrid.add(firstNameField, lastNameField, emailField, phoneField);
-
-        card.add(sectionHeader, formGrid);
-        return card;
-    }
-
-    /**
-     * Toggle mode édition
-     */
-    private void toggleEditMode() {
-        isEditMode = !isEditMode;
-
-        if (isEditMode) {
-            // Passer en mode édition
-            editButton.setText("Save");
-            editButton. addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-            editButton.getStyle().remove("border");
-
-            firstNameField.setReadOnly(false);
-            lastNameField. setReadOnly(false);
-            emailField.setReadOnly(false);
-            phoneField.setReadOnly(false);
-        } else {
-            // Sauvegarder les modifications
-            saveProfile();
-        }
-    }
-
-    /**
-     * Sauvegarde le profil
-     */
-    private void saveProfile() {
-        try {
-            User updatedUser = new User();
-            updatedUser.setPrenom(firstNameField.getValue());
-            updatedUser.setNom(lastNameField. getValue());
-            updatedUser.setEmail(emailField.getValue());
-            updatedUser.setTelephone(phoneField. getValue());
-
-            currentUser = userService. updateProfile(currentUser. getId(), updatedUser, currentUser.getId());
-
-            // Remettre en mode lecture
-            editButton.setText("Edit");
-            editButton.removeThemeVariants(ButtonVariant. LUMO_PRIMARY);
-            editButton. addThemeVariants(ButtonVariant. LUMO_TERTIARY);
-            editButton.getStyle().set("border", "1px solid var(--festivent-secondary)");
-
-            firstNameField.setReadOnly(true);
-            lastNameField.setReadOnly(true);
-            emailField. setReadOnly(true);
-            phoneField.setReadOnly(true);
-
-            Notification.show("Profile updated successfully", 3000, Notification.Position. TOP_CENTER)
-                    .addThemeVariants(NotificationVariant. LUMO_SUCCESS);
-
-        } catch (ConflictException | BusinessException e) {
-            Notification.show(e.getMessage(), 4000, Notification. Position.TOP_CENTER)
-                    . addThemeVariants(NotificationVariant.LUMO_ERROR);
-            isEditMode = true; // Rester en mode édition
-        }
-    }
-
-    /**
-     * Section Account Statistics
-     */
-    private Div createAccountStatsSection() {
-        Div card = new Div();
-        card.addClassName("festivent-card");
-        card.getStyle().set("padding", "var(--festivent-space-lg)");
-
-        H3 sectionTitle = new H3("Account Statistics");
-        sectionTitle.getStyle()
-                .set("margin", "0 0 var(--festivent-space-md) 0")
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("font-weight", "600")
-                .set("color", "var(--festivent-secondary-text)");
-
-        // Récupérer les statistiques
-        Map<String, Object> stats = userService.getUserStatistics(currentUser. getId());
-
-        // Stats row
-        HorizontalLayout statsRow = new HorizontalLayout();
-        statsRow.setWidthFull();
-        statsRow. setSpacing(true);
-        statsRow.getStyle().set("gap", "var(--festivent-space-xl)");
-
-        statsRow.add(
-                createStatItem(VaadinIcon. CALENDAR, "Member Since",
-                        currentUser.getDateInscription().format(DATE_FORMATTER)),
-                createStatItem(VaadinIcon.USER, "Total Reservations",
-                        String.valueOf(stats.get("totalReservations"))),
-                createStatItem(VaadinIcon.EURO, "Total Spent",
-                        String.format("€%.2f", (Double) stats.get("montantTotalDepense")))
+        // Configuration FormLayout responsive
+        FormLayout formLayout = new FormLayout();
+        formLayout.add(prenom, nom, email, telephone);
+        formLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px", 2)
         );
 
-        card.add(sectionTitle, statsRow);
+        // Binding
+        binder.bindInstanceFields(this);
+        binder.readBean(currentUser);
+
+        Button saveBtn = new Button("Enregistrer les modifications");
+        saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveBtn.addClickListener(e -> updateProfile());
+
+        card.add(title, formLayout, saveBtn);
         return card;
     }
 
-    /**
-     * Crée un item de statistique
-     */
-    private HorizontalLayout createStatItem(VaadinIcon iconType, String label, String value) {
-        HorizontalLayout item = new HorizontalLayout();
-        item.setAlignItems(FlexComponent.Alignment. CENTER);
-        item.setSpacing(true);
-        item.getStyle().set("gap", "var(--festivent-space-sm)");
+    private void updateProfile() {
+        try {
+            User updatedData = new User();
+            binder.writeBean(updatedData);
 
-        // Icône dans un cercle
-        Div iconContainer = new Div();
-        iconContainer.getStyle()
-                .set("display", "flex")
-                .set("align-items", "center")
-                .set("justify-content", "center")
-                .set("width", "40px")
-                .set("height", "40px")
-                .set("border-radius", "var(--festivent-radius-md)")
-                .set("background-color", "var(--festivent-accent)");
+            if (updatedData.getEmail() == null) updatedData.setEmail(currentUser.getEmail());
 
-        Icon icon = iconType.create();
-        icon.setSize("20px");
-        icon.getStyle().set("color", "var(--festivent-primary)");
-        iconContainer.add(icon);
+            User savedUser = userService.updateProfile(currentUser.getId(), updatedData, currentUser.getId());
 
-        // Texte
-        VerticalLayout textSection = new VerticalLayout();
-        textSection.setPadding(false);
-        textSection.setSpacing(false);
+            this.currentUser = savedUser;
+            binder.readBean(currentUser);
 
-        Span labelSpan = new Span(label);
-        labelSpan.getStyle()
-                .set("color", "var(--lumo-secondary-text-color)")
-                .set("font-size", "var(--lumo-font-size-xs)");
+            showSuccess("Profil mis à jour avec succès.");
 
-        Span valueSpan = new Span(value);
-        valueSpan.getStyle()
-                .set("color", "var(--festivent-secondary-text)")
-                .set("font-size", "var(--lumo-font-size-m)")
-                .set("font-weight", "600");
-
-        textSection.add(labelSpan, valueSpan);
-
-        item.add(iconContainer, textSection);
-        return item;
+        } catch (Exception e) {
+            showError("Erreur : " + e.getMessage());
+        }
     }
 
-    /**
-     * Section Security
-     */
-    private Div createSecuritySection() {
-        Div card = new Div();
-        card.addClassName("festivent-card");
-        card.getStyle().set("padding", "var(--festivent-space-lg)");
+    /* =========================
+       3. SÉCURITÉ (PASSWORD)
+       ========================= */
+    private VerticalLayout createSecuritySection() {
+        H3 title = new H3("Sécurité");
 
-        VerticalLayout titleSection = new VerticalLayout();
-        titleSection.setPadding(false);
-        titleSection.setSpacing(false);
-        titleSection.getStyle().set("margin-bottom", "var(--festivent-space-md)");
+        VerticalLayout card = createCard();
 
-        H3 sectionTitle = new H3("Security");
-        sectionTitle.getStyle()
-                .set("margin", "0")
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("font-weight", "600")
-                .set("color", "var(--festivent-secondary-text)");
+        oldPassword = new PasswordField("Ancien mot de passe");
+        newPassword = new PasswordField("Nouveau mot de passe");
+        newPassword.setHelperText("Min 8 caractères");
+        confirmNewPassword = new PasswordField("Confirmer le mot de passe");
 
-        Span sectionSubtitle = new Span("Manage your password and account security");
-        sectionSubtitle.getStyle()
-                .set("color", "var(--lumo-secondary-text-color)")
-                .set("font-size", "var(--lumo-font-size-s)");
+        FormLayout formLayout = new FormLayout();
+        formLayout.add(oldPassword, newPassword, confirmNewPassword);
+        formLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px", 3)
+        );
 
-        titleSection. add(sectionTitle, sectionSubtitle);
+        Button changePassBtn = new Button("Changer le mot de passe");
+        changePassBtn.addClickListener(e -> changePassword());
 
-        // Password row
-        HorizontalLayout passwordRow = new HorizontalLayout();
-        passwordRow.setWidthFull();
-        passwordRow.setJustifyContentMode(FlexComponent.JustifyContentMode. BETWEEN);
-        passwordRow.setAlignItems(FlexComponent.Alignment. CENTER);
-
-        VerticalLayout passwordInfo = new VerticalLayout();
-        passwordInfo.setPadding(false);
-        passwordInfo.setSpacing(false);
-
-        Span passwordLabel = new Span("Password");
-        passwordLabel.getStyle()
-                .set("font-weight", "600")
-                .set("color", "var(--festivent-secondary-text)");
-
-        Span passwordHint = new Span("Change your password");
-        passwordHint.getStyle()
-                .set("color", "var(--lumo-secondary-text-color)")
-                .set("font-size", "var(--lumo-font-size-s)");
-
-        passwordInfo.add(passwordLabel, passwordHint);
-
-        Button changePasswordButton = new Button("Change Password");
-        changePasswordButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        changePasswordButton. getStyle()
-                .set("border", "1px solid var(--festivent-secondary)")
-                .set("border-radius", "var(--festivent-radius-md)");
-        changePasswordButton.addClickListener(e -> showChangePasswordDialog());
-
-        passwordRow.add(passwordInfo, changePasswordButton);
-
-        card.add(titleSection, passwordRow);
+        card.add(title, formLayout, changePassBtn);
         return card;
     }
 
-    /**
-     * Dialog pour changer le mot de passe
-     */
-    private void showChangePasswordDialog() {
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Change Password");
-        dialog.setWidth("400px");
+    private void changePassword() {
+        String oldP = oldPassword.getValue();
+        String newP = newPassword.getValue();
+        String confP = confirmNewPassword.getValue();
 
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(true);
+        if (oldP.isEmpty() || newP.isEmpty()) {
+            showError("Veuillez remplir tous les champs.");
+            return;
+        }
 
-        PasswordField currentPassword = new PasswordField("Current Password");
-        currentPassword.setWidthFull();
-        currentPassword.setRequired(true);
+        if (!newP.equals(confP)) {
+            newPassword.setInvalid(true);
+            confirmNewPassword.setInvalid(true);
+            showError("Les nouveaux mots de passe ne correspondent pas.");
+            return;
+        }
 
-        PasswordField newPassword = new PasswordField("New Password");
-        newPassword. setWidthFull();
-        newPassword.setRequired(true);
-        newPassword.setHelperText("Minimum 8 characters");
+        try {
+            userService.changePassword(currentUser.getId(), oldP, newP, currentUser.getId());
 
-        PasswordField confirmPassword = new PasswordField("Confirm New Password");
-        confirmPassword.setWidthFull();
-        confirmPassword.setRequired(true);
+            oldPassword.clear();
+            newPassword.clear();
+            confirmNewPassword.clear();
 
-        content.add(currentPassword, newPassword, confirmPassword);
-        dialog.add(content);
+            showSuccess("Mot de passe modifié avec succès.");
 
-        Button cancelButton = new Button("Cancel", e -> dialog.close());
-        cancelButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        } catch (Exception e) {
+            showError(e.getMessage());
+        }
+    }
 
-        Button saveButton = new Button("Save Password", e -> {
-            // Validation
-            if (currentPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
-                Notification.show("Please fill all fields", 3000, Notification.Position.TOP_CENTER)
-                        .addThemeVariants(NotificationVariant. LUMO_ERROR);
-                return;
-            }
+    /* =========================
+       4. DANGER ZONE
+       ========================= */
+    private VerticalLayout createDangerZone() {
+        VerticalLayout card = createCard();
+        card.addClassName(LumoUtility.Border.ALL);
+        card.getStyle().set("border-color", "var(--lumo-error-color)");
+        card.getStyle().set("background-color", "var(--lumo-error-10pct)");
 
-            if (!newPassword. getValue().equals(confirmPassword.getValue())) {
-                Notification. show("New passwords do not match", 3000, Notification.Position.TOP_CENTER)
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                return;
-            }
+        H3 title = new H3("Zone de danger");
+        title.addClassName(LumoUtility.TextColor.ERROR);
 
-            try {
-                userService.changePassword(
-                        currentUser. getId(),
-                        currentPassword.getValue(),
-                        newPassword.getValue(),
-                        currentUser.getId()
-                );
+        Span warning = new Span("La désactivation de votre compte est irréversible. Vous ne pourrez plus accéder à vos réservations.");
 
-                Notification.show("Password changed successfully", 3000, Notification. Position.TOP_CENTER)
-                        . addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                dialog.close();
+        Button deactivateBtn = new Button("Désactiver mon compte");
+        deactivateBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
-            } catch (UnauthorizedException | BusinessException ex) {
-                Notification.show(ex.getMessage(), 4000, Notification.Position.TOP_CENTER)
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            }
+        deactivateBtn.addClickListener(e -> {
+            ConfirmDialogUtil.show(
+                    "Désactiver le compte ?",
+                    "Voulez-vous vraiment désactiver votre compte ? Cette action entraînera la perte de l'accès à vos données.",
+                    this::handleDeactivation
+            );
         });
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        dialog.getFooter().add(cancelButton, saveButton);
-        dialog.open();
-    }
-
-    /**
-     * Section Danger Zone
-     */
-    private Div createDangerZoneSection() {
-        Div card = new Div();
-        card.getStyle()
-                .set("background-color", "#fef2f2")
-                .set("border", "1px solid #fecaca")
-                .set("border-radius", "var(--festivent-radius-lg)")
-                .set("padding", "var(--festivent-space-lg)");
-
-        VerticalLayout titleSection = new VerticalLayout();
-        titleSection.setPadding(false);
-        titleSection. setSpacing(false);
-        titleSection.getStyle().set("margin-bottom", "var(--festivent-space-md)");
-
-        H3 sectionTitle = new H3("Danger Zone");
-        sectionTitle. getStyle()
-                .set("margin", "0")
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("font-weight", "600")
-                .set("color", "#dc2626");
-
-        Span sectionSubtitle = new Span("Irreversible account actions");
-        sectionSubtitle. getStyle()
-                .set("color", "#991b1b")
-                .set("font-size", "var(--lumo-font-size-s)");
-
-        titleSection.add(sectionTitle, sectionSubtitle);
-
-        // Deactivate row
-        HorizontalLayout deactivateRow = new HorizontalLayout();
-        deactivateRow.setWidthFull();
-        deactivateRow.setJustifyContentMode(FlexComponent.JustifyContentMode. BETWEEN);
-        deactivateRow.setAlignItems(FlexComponent.Alignment.CENTER);
-
-        VerticalLayout deactivateInfo = new VerticalLayout();
-        deactivateInfo.setPadding(false);
-        deactivateInfo. setSpacing(false);
-
-        Span deactivateLabel = new Span("Deactivate Account");
-        deactivateLabel.getStyle()
-                .set("font-weight", "600")
-                .set("color", "var(--festivent-secondary-text)");
-
-        Span deactivateHint = new Span("This will disable your account and you won't be able to log in");
-        deactivateHint. getStyle()
-                .set("color", "var(--lumo-secondary-text-color)")
-                .set("font-size", "var(--lumo-font-size-s)");
-
-        deactivateInfo.add(deactivateLabel, deactivateHint);
-
-        Button deactivateButton = new Button("Deactivate");
-        deactivateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant. LUMO_ERROR);
-        deactivateButton.addClickListener(e -> showDeactivateConfirmation());
-
-        deactivateRow.add(deactivateInfo, deactivateButton);
-
-        card.add(titleSection, deactivateRow);
+        card.add(title, warning, deactivateBtn);
         return card;
     }
 
-    /**
-     * Dialog de confirmation de désactivation
-     */
-    private void showDeactivateConfirmation() {
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Deactivate Account");
-        dialog.setWidth("400px");
+    private void handleDeactivation() {
+        Notification.show("Demande envoyée au support.",
+                        5000, Notification.Position.TOP_CENTER)
+                .addThemeVariants(NotificationVariant.LUMO_PRIMARY);
+    }
 
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(true);
+    /* =========================
+       UTILITAIRES UI
+       ========================= */
+    private VerticalLayout createCard() {
+        VerticalLayout card = new VerticalLayout();
+        card.addClassNames(
+                LumoUtility.Background.BASE,
+                LumoUtility.BoxShadow.SMALL,
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.Padding.LARGE,
+                LumoUtility.Margin.Bottom.MEDIUM
+        );
+        return card;
+    }
 
-        Span message = new Span("Are you sure you want to deactivate your account?");
-        message.getStyle().set("color", "var(--festivent-secondary-text)");
+    private void showSuccess(String msg) {
+        Notification.show(msg, 3000, Notification.Position.TOP_CENTER)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
 
-        Span warning = new Span("This action will disable your account.  You will need to contact an administrator to reactivate it.");
-        warning.getStyle()
-                .set("color", "#dc2626")
-                .set("font-size", "var(--lumo-font-size-s)")
-                .set("font-weight", "500");
-
-        content.add(message, warning);
-        dialog.add(content);
-
-        Button cancelButton = new Button("Keep Account", e -> dialog. close());
-        cancelButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-
-        Button confirmButton = new Button("Deactivate Account", e -> {
-            Notification.show("Account deactivation requires admin action.  Please contact support.",
-                            4000, Notification.Position. TOP_CENTER)
-                    .addThemeVariants(NotificationVariant. LUMO_CONTRAST);
-            dialog. close();
-        });
-        confirmButton. addThemeVariants(ButtonVariant. LUMO_PRIMARY, ButtonVariant. LUMO_ERROR);
-
-        dialog.getFooter().add(cancelButton, confirmButton);
-        dialog.open();
+    private void showError(String msg) {
+        Notification.show(msg, 5000, Notification.Position.TOP_CENTER)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
 }

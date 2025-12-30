@@ -1,0 +1,13 @@
+{
+  "name": "my-vaadin-project",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@vaadin/vaadin-usage-statistics": "^2.1.3",
+    "vite": "^6.4.1"
+  },
+  "dependencies": {
+    "@vaadin/react-components": "^24.9.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

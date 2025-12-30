@@ -1,11 +1,15 @@
 package ma.projet.events.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok. NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +67,7 @@ public class Event {
     private Integer capaciteMax;
 
     @NotNull(message = "Le prix unitaire est obligatoire")
-    @Min(value = 0, message = "Le prix ne peut pas être négatif")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Le prix ne peut pas être négatif")
     @Column(nullable = false)
     private Double prixUnitaire;
 
@@ -85,14 +89,16 @@ public class Event {
     private User organisateur;
 
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude // <--- ET CECI
     private List<Reservation> reservations = new ArrayList<>();
 
     // ==================== SETTER PERSONNALISÉ POUR dateFin ====================
 
-    /**
+    /*
      * Setter personnalisé pour dateFin avec validation
      * Remplace le setter généré par Lombok
      */
+    /**
     public void setDateFin(LocalDateTime dateFin) {
         // Validation : dateFin doit être après dateDebut
         if (dateFin != null && dateDebut != null) {
@@ -104,6 +110,7 @@ public class Event {
         }
         this.dateFin = dateFin;
     }
+     */
 
     // ==================== HOOKS ====================
 

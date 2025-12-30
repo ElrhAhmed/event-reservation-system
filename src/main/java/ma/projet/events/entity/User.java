@@ -1,12 +1,13 @@
-package ma. projet.events.entity;
+package ma.projet.events.entity;
 
 import jakarta.persistence.*;
-import jakarta. validation.constraints. Email;
-import jakarta.validation. constraints.NotBlank;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -54,10 +55,12 @@ public class User {
 
     // Un utilisateur peut créer plusieurs événements (s'il est ORGANIZER)
     @OneToMany(mappedBy = "organisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude // <--- ET CECI
     private List<Event> evenementsOrganises = new ArrayList<>();
 
     // Un utilisateur peut effectuer plusieurs réservations
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude // <--- ET CECI
     private List<Reservation> reservations = new ArrayList<>();
 
     // ==================== HOOKS ====================
@@ -68,7 +71,7 @@ public class User {
     @PrePersist
     protected void onCreate() {
         if (dateInscription == null) {
-            dateInscription = LocalDateTime. now();
+            dateInscription = LocalDateTime.now();
         }
         if (actif == null) {
             actif = true;

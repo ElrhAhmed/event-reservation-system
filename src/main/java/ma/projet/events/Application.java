@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @EnableScheduling active les jobs planifiés (EventService. checkAndMarkFinishedEvents)
  */
 @SpringBootApplication
-@Theme(value = "festivent")
+
 @EnableScheduling
 public class Application implements AppShellConfigurator {
 

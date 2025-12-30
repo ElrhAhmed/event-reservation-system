@@ -1,4 +1,4 @@
-package ma.projet. events.entity;
+package ma.projet.events.entity;
 
 public enum ReservationStatus {
     EN_ATTENTE("En attente", "#FFC107"),

@@ -1,310 +1,88 @@
-/* ============================================
-   FESTIVENT - Global Theme
-   Base: Vaadin 24 Lumo
-   Design: Modern SaaS
-   ============================================ */
+/* =========================
+   GLOBAL
+========================= */
 
-/* ------------------------------------
-   1. FONT IMPORT
-   ------------------------------------ */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk: wght@300;400;500;600;700&display=swap');
 
-/* ------------------------------------
-   2. GLOBAL CSS VARIABLES
-   ------------------------------------ */
-html {
-    /* ========== BRAND COLORS ========== */
-    --festivent-primary: #0b64f4;
-    --festivent-primary-text: #ffffff;
-    --festivent-secondary: #e8ebee;
-    --festivent-secondary-text: #29303d;
-    --festivent-accent: #e7f0fe;
-    --festivent-accent-text: #073c92;
+:root {
 
-    /* ========== ADDITIONAL COLORS ========== */
-    --festivent-surface: #ffffff;
-    --festivent-border: #e5e7eb;
-    --festivent-error: #dc3545;
-    --festivent-success:  #28a745;
-    --festivent-warning: #ffc107;
+    --stat-color: var(--lumo-primary-color);
+    --fest-primary: #3c83f6;
+    --fest-primary-text: #ffffff;
 
-    /* ========== TRANSITIONS ========== */
-    --festivent-transition-fast: 0.15s ease;
-    --festivent-transition-normal: 0.25s ease;
+    --fest-bg: #f8fafc;
+    --fest-surface: #ffffff;
 
-    /* ------------------------------------
-   6. SIDE NAVIGATION (MainLayout)
-   ------------------------------------ */
+    --fest-text-main: #0f1729;
+    --fest-text-muted: #64748b;
 
-    /* Drawer background */
-    vaadin-app-layout::part(drawer) {
-        background-color: var(--festivent-surface);
-        border-right: 1px solid var(--festivent-border);
-    }
-
-    /* Side nav items */
-    vaadin-side-nav-item {
-        border-radius: var(--festivent-radius-md);
-        margin:  2px var(--festivent-space-xs);
-        transition: all var(--festivent-transition-fast);
-    }
-
-    vaadin-side-nav-item:hover {
-        background-color:  var(--festivent-accent);
-    }
-
-    vaadin-side-nav-item[active] {
-        background-color: var(--festivent-accent);
-        color: var(--festivent-primary);
-        font-weight: 600;
-    }
-
-    vaadin-side-nav-item[active]::before {
-        background-color: var(--festivent-primary);
-    }
-
-    /* Header styling */
-    vaadin-app-layout::part(navbar) {
-        background-color: var(--festivent-surface);
-        box-shadow: var(--festivent-shadow-sm);
-    }
-
-    /* ========== SHADOWS (SOFT & SUBTLE) ========== */
-    --festivent-shadow-sm: 0 1px 3px 0 rgba(11, 100, 244, 0.08);
-    --festivent-shadow-md: 0 4px 12px 0 rgba(11, 100, 244, 0.12);
-    --festivent-shadow-lg: 0 10px 24px 0 rgba(11, 100, 244, 0.16);
-
-    /* ========== BORDER RADIUS (LARGE ROUNDED) ========== */
-    --festivent-radius-sm: 8px;
-    --festivent-radius-md: 12px;
-    --festivent-radius-lg: 16px;
-    --festivent-radius-xl: 24px;
-
-    /* ========== SPACING (AIRY & CLEAN) ========== */
-    --festivent-space-xs: 0.5rem;   /* 8px */
-    --festivent-space-sm: 0.75rem;  /* 12px */
-    --festivent-space-md: 1rem;     /* 16px */
-    --festivent-space-lg:  1.5rem;   /* 24px */
-    --festivent-space-xl: 2rem;     /* 32px */
-    --festivent-space-2xl: 3rem;    /* 48px */
-
-    /* ========== OVERRIDE LUMO VARIABLES ========== */
-    --lumo-primary-color: var(--festivent-primary);
-    --lumo-primary-text-color: var(--festivent-primary);
-    --lumo-primary-contrast-color: var(--festivent-primary-text);
-
-    --lumo-base-color: #ffffff;
-    --lumo-body-text-color: var(--festivent-secondary-text);
-    --lumo-secondary-text-color: #6b7280;
-    --lumo-tertiary-text-color: #9ca3af;
-
-    --lumo-border-radius-s: var(--festivent-radius-sm);
-    --lumo-border-radius-m: var(--festivent-radius-md);
-    --lumo-border-radius-l: var(--festivent-radius-lg);
-
-    --lumo-space-xs: var(--festivent-space-xs);
-    --lumo-space-s: var(--festivent-space-sm);
-    --lumo-space-m: var(--festivent-space-md);
-    --lumo-space-l: var(--festivent-space-lg);
-    --lumo-space-xl: var(--festivent-space-xl);
-
-    --lumo-font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-    --lumo-font-size-xxs: 0.75rem;
-    --lumo-font-size-xs: 0.875rem;
-    --lumo-font-size-s: 1rem;
-    --lumo-font-size-m: 1.125rem;
-    --lumo-font-size-l:  1.25rem;
-    --lumo-font-size-xl: 1.5rem;
-    --lumo-font-size-xxl: 2rem;
+    --fest-border-radius: 12px;
+    --fest-shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
-/* ------------------------------------
-   3. GLOBAL RESETS
-   ------------------------------------ */
+html,
 body {
-    font-family: var(--lumo-font-family);
-    background-color: #f9fafb;
-    color:  var(--festivent-secondary-text);
-    margin: 0;
-    padding:  0;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    font-family: "Inter", sans-serif;
+    background-color: var(--fest-bg);
+    color: var(--fest-text-main);
 }
 
-/* ------------------------------------
-   4. UTILITY CLASSES
-   ------------------------------------ */
-
-/* ========== CARD COMPONENT ========== */
-.festivent-card {
-    background-color: var(--lumo-base-color);
-    border-radius: var(--festivent-radius-lg);
-    box-shadow: var(--festivent-shadow-md);
-    padding: var(--festivent-space-lg);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+/* =========================
+   TITRES
+========================= */
+h1, h2, h3 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
 }
 
-.festivent-card:hover {
-    box-shadow: var(--festivent-shadow-lg);
-    transform: translateY(-2px);
+h1 {
+    font-size: 2.5rem;
 }
 
-/* ========== BADGE COMPONENT ========== */
-.festivent-badge {
-    display: inline-flex;
+h2 {
+    font-size: 1.6rem;
+}
+
+/* =========================
+   CONTAINERS
+========================= */
+.fest-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 2rem 1rem;
+}
+
+.fest-center {
+    display: flex;
     align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--festivent-radius-sm);
-    font-size: var(--lumo-font-size-xs);
-    font-weight: 600;
-    letter-spacing: 0.025em;
-    text-transform: uppercase;
+    justify-content: center;
 }
 
-.festivent-badge--primary {
-    background-color:  var(--festivent-accent);
-    color: var(--festivent-accent-text);
+/* =========================
+   HEADER
+========================= */
+.fest-header {
+    background: var(--fest-surface);
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.festivent-badge--secondary {
-    background-color: var(--festivent-secondary);
-    color: var(--festivent-secondary-text);
+.fest-logo {
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: var(--fest-primary);
+    text-decoration: none;
 }
 
-/* ========== PAGE CONTAINER ========== */
-. festivent-container {
-    max-width: 1280px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: var(--festivent-space-lg);
-    padding-right: var(--festivent-space-lg);
+/* =========================
+   HERO
+========================= */
+.fest-hero {
+    background: linear-gradient(135deg, #3c83f6, #5a9bff);
+    color: white;
+    padding: 4rem 1rem;
+    text-align: center;
 }
 
-.festivent-container--narrow {
-    max-width: 960px;
-}
-
-. festivent-container--wide {
-    max-width: 1536px;
-}
-
-/* ========== SPACING UTILITIES ========== */
-. festivent-mt-xs { margin-top: var(--festivent-space-xs); }
-.festivent-mt-sm { margin-top: var(--festivent-space-sm); }
-.festivent-mt-md { margin-top: var(--festivent-space-md); }
-.festivent-mt-lg { margin-top: var(--festivent-space-lg); }
-.festivent-mt-xl { margin-top: var(--festivent-space-xl); }
-
-.festivent-mb-xs { margin-bottom: var(--festivent-space-xs); }
-.festivent-mb-sm { margin-bottom: var(--festivent-space-sm); }
-.festivent-mb-md { margin-bottom: var(--festivent-space-md); }
-.festivent-mb-lg { margin-bottom: var(--festivent-space-lg); }
-.festivent-mb-xl { margin-bottom: var(--festivent-space-xl); }
-
-.festivent-p-xs { padding: var(--festivent-space-xs); }
-.festivent-p-sm { padding: var(--festivent-space-sm); }
-.festivent-p-md { padding: var(--festivent-space-md); }
-.festivent-p-lg { padding: var(--festivent-space-lg); }
-.festivent-p-xl { padding: var(--festivent-space-xl); }
-
-/* ========== TEXT UTILITIES ========== */
-. festivent-text-primary {
-    color: var(--festivent-secondary-text);
-}
-
-.festivent-text-secondary {
-    color: var(--lumo-secondary-text-color);
-}
-
-.festivent-text-accent {
-    color: var(--festivent-accent-text);
-}
-
-/* ========== SHADOW UTILITIES ========== */
-. festivent-shadow-sm {
-    box-shadow: var(--festivent-shadow-sm);
-}
-
-.festivent-shadow-md {
-    box-shadow:  var(--festivent-shadow-md);
-}
-
-.festivent-shadow-lg {
-    box-shadow: var(--festivent-shadow-lg);
-}
-
-.festivent-form-grid {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-/* Champs qui doivent prendre toute la largeur */
-.festivent-form-grid vaadin-email-field,
-.festivent-form-grid vaadin-text-area {
-    grid-column: span 2;
-}
-
-/* Responsive mobile */
-@media (max-width: 640px) {
-    .festivent-form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .festivent-form-grid vaadin-email-field,
-    .festivent-form-grid vaadin-text-area {
-        grid-column: span 1;
-    }
-}
-
-/* ------------------------------------
-   5. VAADIN COMPONENT REFINEMENTS
-   ------------------------------------ */
-
-/* ========== BUTTONS ========== */
-vaadin-button[theme~="primary"] {
-    background-color: var(--festivent-primary);
-    color: var(--festivent-primary-text);
-    border-radius: var(--festivent-radius-md);
-    font-weight: 600;
-    box-shadow: var(--festivent-shadow-sm);
-    transition: all 0.2s ease;
-}
-
-vaadin-button[theme~="primary"]:hover:not([disabled]) {
-    background-color: #0952c9;
-    box-shadow: var(--festivent-shadow-md);
-    transform: translateY(-1px);
-}
-
-vaadin-button[theme~="primary"]:active:not([disabled]) {
-    transform: translateY(0);
-}
-
-/* ========== INPUT FIELDS ========== */
-vaadin-text-field,
-vaadin-email-field,
-vaadin-password-field,
-vaadin-number-field,
-vaadin-text-area {
-    --lumo-border-radius:  var(--festivent-radius-md);
-}
-
-/* ========== GRID ========== */
-vaadin-grid {
-    border-radius: var(--festivent-radius-lg);
-    overflow: hidden;
-    box-shadow: var(--festivent-shadow-sm);
-}
-
-/* ========== DIALOG ========== */
-vaadin-dialog-overlay {
-    --lumo-border-radius: var(--festivent-radius-xl);
-}
-
-/* ========== NOTIFICATION ========== */
-vaadin-notification-card {
-    border-radius: var(--festivent-radius-md);
-    box-shadow: var(--festivent-shadow-lg);
+.fest-hero p {
+    font-size: 1.1rem;
+    opacity: 0.95;
 }

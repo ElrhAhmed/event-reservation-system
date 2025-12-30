@@ -1,8 +1,8 @@
 package ma.projet.events.service;
 
 import ma.projet.events.entity.*;
-import ma.projet.events. exception.*;
-import ma.projet. events.repository.*;
+import ma.projet.events.exception.*;
+import ma.projet.events.repository.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +33,7 @@ public class EventService {
                 .orElseThrow(() -> new ResourceNotFoundException("Organisateur introuvable"));
 
         // ✅ AJOUTER : Vérification du rôle
-        if (! organisateur.isOrganizer() && !organisateur.isAdmin()) {
+        if (!organisateur.isOrganizer() && !organisateur.isAdmin()) {
             throw new UnauthorizedException(
                     "Seuls les organisateurs et administrateurs peuvent créer des événements"
             );
@@ -65,14 +65,14 @@ public class EventService {
      * Récupérer les événements d'un organisateur
      */
     public List<Event> getEventsByOrganisateur(Long organisateurId) {
-        return eventRepository. findByOrganisateurId(organisateurId);
+        return eventRepository.findByOrganisateurId(organisateurId);
     }
 
     /**
      * Rechercher des événements par mot-clé
      */
     public List<Event> searchEvents(String keyword) {
-        return eventRepository. search(keyword);
+        return eventRepository.search(keyword);
     }
 
     /**
@@ -88,7 +88,7 @@ public class EventService {
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
 
         // ✅ MODIFIER : Autoriser organisateur OU admin
-        if (!event. getOrganisateur().getId(). equals(userId) && !user. isAdmin()) {
+        if (!event.getOrganisateur().getId().equals(userId) && !user.isAdmin()) {
             throw new UnauthorizedException(
                     "Seul le créateur ou un administrateur peut modifier cet événement"
             );
@@ -104,13 +104,13 @@ public class EventService {
             event.setTitre(updatedEvent.getTitre());
         }
         if (updatedEvent.getDescription() != null) {
-            event. setDescription(updatedEvent.getDescription());
+            event.setDescription(updatedEvent.getDescription());
         }
         if (updatedEvent.getDateDebut() != null) {
             event.setDateDebut(updatedEvent.getDateDebut());
         }
         if (updatedEvent.getDateFin() != null) {
-            event. setDateFin(updatedEvent.getDateFin());
+            event.setDateFin(updatedEvent.getDateFin());
         }
         if (updatedEvent.getLieu() != null) {
             event.setLieu(updatedEvent.getLieu());
@@ -150,9 +150,18 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Événement introuvable avec l'ID : " + eventId));
 
-        // 2.  Vérifier les droits (seul l'organisateur peut publier)
-        if (!event. getOrganisateur().getId(). equals(userId)) {
-            throw new UnauthorizedException("Seul l'organisateur peut publier cet événement");
+        // 2. Vérifier les droits (organisateur ou ADMIN)
+        boolean authorized = false;
+        if (userId != null) {
+            if (event.getOrganisateur() != null && event.getOrganisateur().getId().equals(userId)) {
+                authorized = true;
+            } else {
+                Optional<User> maybeUser = userRepository.findById(userId);
+                authorized = maybeUser.map(User::isAdmin).orElse(false);
+            }
+        }
+        if (!authorized) {
+            throw new UnauthorizedException("Seul le créateur ou un administrateur peut publier cet événement");
         }
 
         // 3.  Vérifier que l'événement est en BROUILLON
@@ -181,7 +190,7 @@ public class EventService {
         if (event.getLieu() == null || event.getLieu().isBlank()) {
             champsManquants.add("Lieu");
         }
-        if (event.getVille() == null || event. getVille().isBlank()) {
+        if (event.getVille() == null || event.getVille().isBlank()) {
             champsManquants.add("Ville");
         }
         if (event.getCapaciteMax() == null || event.getCapaciteMax() <= 0) {
@@ -200,7 +209,7 @@ public class EventService {
 
         // 5. Publier
         event.setStatut(EventStatus.PUBLIE);
-        Event eventPublie = eventRepository. save(event);
+        Event eventPublie = eventRepository.save(event);
 
         System.out.println("✅ Événement publié : " + event.getTitre() + " (ID: " + eventId + ")");
 
@@ -225,17 +234,26 @@ public class EventService {
                 .orElseThrow(() -> new ResourceNotFoundException("Événement introuvable avec l'ID : " + eventId));
 
         // 2. Vérifier les droits
-        if (!event.getOrganisateur().getId().equals(userId)) {
-            throw new UnauthorizedException("Seul l'organisateur peut annuler cet événement");
+        boolean authorized = false;
+        if (userId != null) {
+            if (event.getOrganisateur() != null && event.getOrganisateur().getId().equals(userId)) {
+                authorized = true;
+            } else {
+                Optional<User> maybeUser = userRepository.findById(userId);
+                authorized = maybeUser.map(User::isAdmin).orElse(false);
+            }
+        }
+        if (!authorized) {
+            throw new UnauthorizedException("Seul le créateur ou un administrateur peut annuler cet événement");
         }
 
         // 3. Vérifier que l'événement n'est pas déjà annulé
-        if (event.getStatut() == EventStatus. ANNULE) {
+        if (event.getStatut() == EventStatus.ANNULE) {
             throw new BusinessException("Cet événement est déjà annulé");
         }
 
         // 4. Vérifier que l'événement n'est pas terminé
-        if (event.getStatut() == EventStatus. TERMINE) {
+        if (event.getStatut() == EventStatus.TERMINE) {
             throw new BusinessException("Impossible d'annuler un événement terminé");
         }
 
@@ -246,7 +264,7 @@ public class EventService {
                 resa.setStatut(ReservationStatus.ANNULEE);
                 resa.setCommentaire("Événement annulé : " +
                         (raisonAnnulation != null ? raisonAnnulation : "Aucune raison fournie"));
-                reservationRepository. save(resa);
+                reservationRepository.save(resa);
             }
         }
 
@@ -254,7 +272,7 @@ public class EventService {
         event.setStatut(EventStatus.ANNULE);
         Event eventAnnule = eventRepository.save(event);
 
-        System. out.println("✅ Événement annulé : " + event.getTitre() +
+        System.out.println("✅ Événement annulé : " + event.getTitre() +
                 " (" + reservations.size() + " réservation(s) annulée(s))");
 
         return eventAnnule;
@@ -272,16 +290,25 @@ public class EventService {
     @Transactional
     public void deleteEventSafely(Long eventId, Long userId) {
         // 1.  Récupérer l'événement
-        Event event = eventRepository. findById(eventId)
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Événement introuvable avec l'ID : " + eventId));
 
         // 2. Vérifier les droits
-        if (!event.getOrganisateur().getId().equals(userId)) {
-            throw new UnauthorizedException("Seul l'organisateur peut supprimer cet événement");
+        boolean authorized = false;
+        if (userId != null) {
+            if (event.getOrganisateur() != null && event.getOrganisateur().getId().equals(userId)) {
+                authorized = true;
+            } else {
+                Optional<User> maybeUser = userRepository.findById(userId);
+                authorized = maybeUser.map(User::isAdmin).orElse(false);
+            }
+        }
+        if (!authorized) {
+            throw new UnauthorizedException("Seul le créateur ou un administrateur peut supprimer cet événement");
         }
 
         // 3. Vérifier qu'il n'y a aucune réservation
-        Long nbReservations = reservationRepository. countByEvenementId(eventId);
+        Long nbReservations = reservationRepository.countByEvenementId(eventId);
         if (nbReservations > 0) {
             throw new BusinessException(
                     "Impossible de supprimer cet événement : " + nbReservations +
@@ -333,8 +360,8 @@ public class EventService {
         return eventsPublies.stream()
                 .sorted((e1, e2) -> {
                     Long count1 = reservationRepository.countByEvenementId(e1.getId());
-                    Long count2 = reservationRepository.countByEvenementId(e2. getId());
-                    return count2. compareTo(count1); // Ordre décroissant
+                    Long count2 = reservationRepository.countByEvenementId(e2.getId());
+                    return count2.compareTo(count1); // Ordre décroissant
                 })
                 .limit(limit)
                 .collect(Collectors.toList());
@@ -349,12 +376,12 @@ public class EventService {
      * @return Map contenant les statistiques
      */
     public Map<String, Object> getOrganizerStatistics(Long organizerId) {
-        List<Event> events = eventRepository. findByOrganisateurId(organizerId);
+        List<Event> events = eventRepository.findByOrganisateurId(organizerId);
 
         Map<String, Object> stats = new HashMap<>();
 
         // Nombre total d'événements
-        stats.put("totalEvents", events. size());
+        stats.put("totalEvents", events.size());
 
         // Nombre d'événements par statut
         long publishedCount = events.stream()
@@ -363,12 +390,12 @@ public class EventService {
         stats. put("publishedEvents", publishedCount);
 
         long draftCount = events.stream()
-                .filter(e -> e. getStatut() == EventStatus. BROUILLON)
-                . count();
+                .filter(e -> e.getStatut() == EventStatus.BROUILLON)
+                .count();
         stats.put("draftEvents", draftCount);
 
         long cancelledCount = events.stream()
-                .filter(e -> e.getStatut() == EventStatus. ANNULE)
+                .filter(e -> e.getStatut() == EventStatus.ANNULE)
                 .count();
         stats.put("cancelledEvents", cancelledCount);
 
@@ -379,8 +406,8 @@ public class EventService {
 
         // Calculer les revenus totaux (réservations confirmées uniquement)
         double totalRevenue = events.stream()
-                .flatMap(e -> reservationRepository.findByEvenementId(e. getId()).stream())
-                .filter(r -> r.getStatut() == ReservationStatus. CONFIRMEE)
+                .flatMap(e -> reservationRepository.findByEvenementId(e.getId()).stream())
+                .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
                 .mapToDouble(Reservation::getMontantTotal)
                 .sum();
         stats.put("totalRevenue", totalRevenue);
@@ -409,8 +436,8 @@ public class EventService {
         int markedAsFinished = 0;
 
         for (Event event : publishedEvents) {
-            if (event.getDateFin(). isBefore(now)) {
-                event.setStatut(EventStatus. TERMINE);
+            if (event.getDateFin().isBefore(now)) {
+                event.setStatut(EventStatus.TERMINE);
                 eventRepository.save(event);
                 markedAsFinished++;
             }
@@ -440,20 +467,38 @@ public class EventService {
             String ville,
             LocalDateTime dateMin,
             LocalDateTime dateMax,
-            String lieu,
+            String keyword, // Ancien nom : "lieu". Nouveau rôle : Mot-clé global
             Double prixMin,
             Double prixMax
     ) {
-        List<Event> events = eventRepository. findByStatut(EventStatus.PUBLIE);
+        // On part de tous les événements publiés
+        List<Event> events = eventRepository.findByStatut(EventStatus.PUBLIE);
 
         return events.stream()
+                // 1. Filtre Catégorie
                 .filter(e -> categorie == null || e.getCategorie().equals(categorie))
+
+                // 2. Filtre Ville
                 .filter(e -> ville == null || e.getVille().equalsIgnoreCase(ville))
-                .filter(e -> dateMin == null || e.getDateDebut().isAfter(dateMin))
-                .filter(e -> dateMax == null || e. getDateDebut().isBefore(dateMax))
-                .filter(e -> lieu == null || e.getLieu(). toLowerCase().contains(lieu.toLowerCase())) // ✅ AJOUTER
+
+                // 3. Filtre Date Min
+                .filter(e -> dateMin == null || !e.getDateDebut().isBefore(dateMin))
+
+                // 4. Filtre Date Max
+                .filter(e -> dateMax == null || !e.getDateDebut().isAfter(dateMax))
+
+                // 5. 🔥 FILTRE MOT-CLÉ (CORRECTION ICI) 🔥
+                // On cherche si le mot-clé existe dans le Titre OU la Description OU le Lieu
+                .filter(e -> keyword == null ||
+                        (e.getTitre() != null && e.getTitre().toLowerCase().contains(keyword.toLowerCase())) ||
+                        (e.getDescription() != null && e.getDescription().toLowerCase().contains(keyword.toLowerCase())) ||
+                        (e.getLieu() != null && e.getLieu().toLowerCase().contains(keyword.toLowerCase()))
+                )
+
+                // 6. Filtres Prix
                 .filter(e -> prixMin == null || e.getPrixUnitaire() >= prixMin)
                 .filter(e -> prixMax == null || e.getPrixUnitaire() <= prixMax)
+
                 .collect(Collectors.toList());
     }
 }

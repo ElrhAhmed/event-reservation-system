@@ -1,12 +1,12 @@
-package ma.projet.events. repository;
+package ma.projet.events.repository;
 
-import ma.projet. events.entity.Event;
-import ma.projet.events.entity. EventCategory;
+import ma.projet.events.entity.Event;
+import ma.projet.events.entity.EventCategory;
 import ma.projet.events.entity.EventStatus;
-import org.springframework.data.jpa. repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org. springframework.stereotype.Repository;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
