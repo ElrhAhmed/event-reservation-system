@@ -82,9 +82,7 @@ public class ReservationFilterBar extends HorizontalLayout {
         user.clear();
     }
 
-    /* =======================
-       DTO interne
-       ======================= */
+
 
     public static class ReservationFilter {
         public String code;

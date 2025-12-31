@@ -32,7 +32,7 @@ public class EventService {
         User organisateur = userRepository.findById(organisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException("Organisateur introuvable"));
 
-        // ✅ AJOUTER : Vérification du rôle
+        //  Vérification du rôle
         if (!organisateur.isOrganizer() && !organisateur.isAdmin()) {
             throw new UnauthorizedException(
                     "Seuls les organisateurs et administrateurs peuvent créer des événements"
@@ -83,11 +83,11 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Événement introuvable"));
 
-        // ✅ AJOUTER : Récupérer l'utilisateur
+        //  Récupérer l'utilisateur
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
 
-        // ✅ MODIFIER : Autoriser organisateur OU admin
+        //  Autoriser organisateur OU admin
         if (!event.getOrganisateur().getId().equals(userId) && !user.isAdmin()) {
             throw new UnauthorizedException(
                     "Seul le créateur ou un administrateur peut modifier cet événement"
@@ -424,7 +424,7 @@ public class EventService {
     // ==================== MÉTHODE 7 : JOB AUTOMATIQUE - MARQUER ÉVÉNEMENTS TERMINÉS ====================
 
     /**
-     * Job automatique qui s'exécute tous les jours à 1h du matin
+     * Job automatique qui s'exécute tous les jours
      * Marque les événements comme TERMINÉ si leur date de fin est passée
      */
     @Scheduled(cron = "0 0 1 * * *") // Tous les jours à 1h du matin

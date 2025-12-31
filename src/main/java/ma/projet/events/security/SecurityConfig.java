@@ -19,10 +19,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
 
+/**
+ * Configuration principale de la sécurité.
+ * Étend VaadinWebSecurity pour faciliter l'intégration avec Vaadin.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends VaadinWebSecurity {
 
+    // Utilisation de BCrypt pour hasher les mots de passe de manière sécurisée
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -31,39 +36,45 @@ public class SecurityConfig extends VaadinWebSecurity {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
+        // 1. Définition des URLs publiques (accessibles sans connexion)
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                        new AntPathRequestMatcher("/"),
-                        new AntPathRequestMatcher("/login"),
-                        new AntPathRequestMatcher("/register"),
-                        new AntPathRequestMatcher("/events/**"),
-                        new AntPathRequestMatcher("/event/**"),
-                        new AntPathRequestMatcher("/images/**"),
+                        new AntPathRequestMatcher("/"),          // Page d'accueil
+                        new AntPathRequestMatcher("/login"),     // Page de connexion
+                        new AntPathRequestMatcher("/register"),  // Page d'inscription
+                        new AntPathRequestMatcher("/events/**"), // Liste des événements
+                        new AntPathRequestMatcher("/event/**"),  // Détails d'un événement
+                        new AntPathRequestMatcher("/images/**"), // Ressources statiques
                         new AntPathRequestMatcher("/icons/**"),
-                        new AntPathRequestMatcher("/h2-console/**"),
-                        new AntPathRequestMatcher("/VAADIN/**")
+                        new AntPathRequestMatcher("/h2-console/**"), // Base de données H2 (dev)
+                        new AntPathRequestMatcher("/VAADIN/**")      // Ressources internes Vaadin
                 ).permitAll()
         );
 
+        // Appel de la configuration parente pour sécuriser les vues Vaadin restantes
         super.configure(http);
 
+        // 2. Définition de la vue de connexion personnalisée (Vaadin)
         setLoginView(http, LoginView.class);
 
-
+        // 3. Configuration de la déconnexion
         http.logout(logout -> logout
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
-                .logoutSuccessUrl("/")
+                .logoutSuccessUrl("/") // Retour à l'accueil après déconnexion
                 .permitAll()
         );
 
-        // Gestion de la redirection après login
+        // 4. Gestionnaire de succès de connexion (Redirection par Rôle)
+        // C'est ici qu'on décide où envoyer l'utilisateur après son login.
         http.formLogin(form -> form
                 .successHandler(new AuthenticationSuccessHandler() {
                     @Override
                     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+                        // Récupération des rôles de l'utilisateur connecté
                         Set<String> roles = AuthorityUtils.authorityListToSet(authentication.getAuthorities());
-                        String targetUrl = "/";
+                        String targetUrl = "/"; // URL par défaut
 
+                        // Redirection conditionnelle
                         if (roles.contains("ROLE_ADMIN")) {
                             targetUrl = "/admin/dashboard";
                         } else if (roles.contains("ROLE_ORGANIZER")) {
@@ -72,15 +83,16 @@ public class SecurityConfig extends VaadinWebSecurity {
                             targetUrl = "/dashboard";
                         }
 
+                        // Effectuer la redirection
                         response.sendRedirect(targetUrl);
                     }
                 })
         );
 
+        // Configuration spécifique pour autoriser la console H2
         http.csrf(csrf -> csrf
                 .ignoringRequestMatchers(new AntPathRequestMatcher("/h2-console/**"))
         );
-
         http.headers(headers -> headers
                 .frameOptions(frame -> frame.sameOrigin())
         );

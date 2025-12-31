@@ -77,14 +77,14 @@ public class StatCard extends Div {
         add(iconBox, info);
     }
 
-    // --- CONSTRUCTEURS DE COMPATIBILITÉ (Pour ne pas casser l'ancien code) ---
+
 
     // Constructeur simple utilisé par certaines vues
     public StatCard(String title, String value) {
         this(title, value, null, null, null);
     }
 
-    // --- SETTERS (Pour corriger vos erreurs dans EventReservationsView) ---
+
 
     public void setValue(String value) {
         valSpan.setText(value);

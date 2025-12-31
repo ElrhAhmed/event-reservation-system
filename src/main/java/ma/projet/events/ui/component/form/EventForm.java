@@ -112,9 +112,7 @@ public class EventForm extends FormLayout {
         preview.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        // --- CORRECTION MAJEURE ICI ---
-        // On n'utilise plus validateAndFire générique qui utilisait binder.getBean() (null).
-        // On écrit explicitement dans this.event avant d'envoyer.
+
 
         saveDraft.addClickListener(e -> {
             try {
@@ -155,7 +153,7 @@ public class EventForm extends FormLayout {
         binder.readBean(event); // Initialise le formulaire (mode lecture)
     }
 
-    // Utile pour la vue parente si besoin de re-valider
+
     public boolean writeBeanIfValid(Event event) {
         return binder.writeBeanIfValid(event);
     }

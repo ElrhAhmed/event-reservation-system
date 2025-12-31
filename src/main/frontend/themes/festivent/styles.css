@@ -60,15 +60,15 @@ html {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 4rem 1rem 6rem 1rem; /* Padding bas plus grand pour laisser place à la barre de recherche si elle flotte */
+    padding: 4rem 1rem 6rem 1rem; /
     min-height: 400px;
 }
-/* Le bouton blanc "Explorer" */
+
 .hero-btn {
     background-color: white !important;
-    color: #1a202c !important; /* Texte foncé */
+    color: #1a202c !important;
     font-weight: 600 !important;
-    border-radius: 4px !important; /* Coins légèrement arrondis comme l'image */
+    border-radius: 4px !important;
     height: 50px;
     padding: 0 30px;
     font-size: 1.1rem;
@@ -79,22 +79,22 @@ html {
 }
 
 .hero-btn:hover {
-    background-color: #f7fafc !important; /* Gris très clair au survol */
+    background-color: #f7fafc !important;
 }
 
-/* Si vous gardez la barre de recherche flottante de la V1 */
+
 .floating-search-card {
     background-color: white;
     box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
     border-radius: 12px;
-    /* Important pour qu'elle flotte par dessus le bleu */
+
     position: relative;
     z-index: 10;
 }
 
 
 
-/* === NAVBAR === */
+
 .navbar-header {
     background-color: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px); /* Effet verre dépoli */

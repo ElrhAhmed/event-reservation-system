@@ -155,7 +155,7 @@ public class EventListView extends VerticalLayout {
 
         resultsCount.setText(currentResults.size() + " événements trouvés");
 
-        // 1. Application du Tri (In-Memory)
+        // 1. Festivent du Tri (In-Memory)
         String sortOption = sortSelect.getValue();
         Comparator<Event> comparator;
 

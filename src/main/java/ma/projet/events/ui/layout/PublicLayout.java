@@ -94,7 +94,7 @@ public class PublicLayout extends AppLayout implements RouterLayout {
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
-        // Application de la classe CSS personnalisée pour le flou et la bordure
+        // Festivent de la classe CSS personnalisée pour le flou et la bordure
         header.addClassName("navbar-header");
         header.addClassNames(
                 LumoUtility.Padding.Vertical.SMALL,

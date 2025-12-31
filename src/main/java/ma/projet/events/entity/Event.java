@@ -16,13 +16,13 @@ import java.util.List;
 
 @Entity
 @Table(name = "events", indexes = {
-        @Index(name = "idx_statut", columnList = "statut"),
+        @Index(name = "idx_event_statut", columnList = "statut"),
         @Index(name = "idx_categorie", columnList = "categorie"),
         @Index(name = "idx_ville", columnList = "ville"),
         @Index(name = "idx_date_debut", columnList = "dateDebut")
 })
 @Getter  // ← Génère tous les getters
-@Setter  // ← Génère tous les setters (SAUF ceux qu'on écrit manuellement)
+@Setter  // ← Génère tous les setters
 @NoArgsConstructor
 @AllArgsConstructor
 public class Event {

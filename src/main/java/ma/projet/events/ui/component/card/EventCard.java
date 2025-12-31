@@ -13,6 +13,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import ma.projet.events.entity.Event;
+import ma.projet.events.entity.EventCategory;
 import ma.projet.events.ui.component.common.StatusBadge;
 import ma.projet.events.ui.util.DateFormatter;
 import ma.projet.events.ui.util.PriceFormatter;
@@ -54,20 +55,25 @@ public class EventCard extends Div {
         content.addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.SMALL);
         content.setSpacing(false);
 
-        // -- Catégorie & Badge --
+        // -- TOP ROW : Catégorie en Badge (MODIFICATION ICI) --
         HorizontalLayout topRow = new HorizontalLayout();
         topRow.setWidthFull();
-        topRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        topRow.setAlignItems(FlexComponent.Alignment.CENTER);
+        // On aligne le badge tout à droite
+        topRow.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
 
-        Span category = new Span(event.getCategorie().getLabel());
-        category.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.SECONDARY);
-        category.getStyle().set("text-transform", "uppercase");
+        // Récupération de la catégorie
+        EventCategory cat = event.getCategorie();
 
-        StatusBadge statusBadge = new StatusBadge(event.getStatut().getLabel(), event.getStatut().getColor());
-        statusBadge.getElement().getStyle().set("font-size", "10px");
+        // Création du badge avec l'icône de la catégorie et une couleur spécifique
+        // On utilise cat.getIcon() + cat.getLabel() pour un rendu sympa (ex: 🎵 Concert)
+        StatusBadge categoryBadge = new StatusBadge(
+                cat.getIcon() + " " + cat.getLabel(),
+                getCategoryColor(cat)
+        );
+        // On réduit un peu la taille de la police pour que ça rentre bien
+        categoryBadge.getElement().getStyle().set("font-size", "11px");
 
-        topRow.add(category, statusBadge);
+        topRow.add(categoryBadge);
 
         // -- Titre --
         H3 title = new H3(event.getTitre());
@@ -83,13 +89,11 @@ public class EventCard extends Div {
         metaInfo.setPadding(false);
         metaInfo.setSpacing(false);
 
-        // CORRECTION ICI : Création explicite des icônes
         Icon dateIcon = VaadinIcon.CALENDAR_CLOCK.create();
         dateIcon.setSize("14px");
         Span date = new Span(dateIcon, new Span(" " + DateFormatter.format(event.getDateDebut())));
         date.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY, LumoUtility.Display.FLEX, LumoUtility.AlignItems.CENTER);
 
-        // CORRECTION ICI : Création explicite des icônes
         Icon cityIcon = VaadinIcon.MAP_MARKER.create();
         cityIcon.setSize("14px");
         Span city = new Span(cityIcon, new Span(" " + event.getVille()));
@@ -135,5 +139,24 @@ public class EventCard extends Div {
 
     public void setOnView(Runnable onView) {
         this.onView = onView;
+    }
+
+
+    private String getCategoryColor(EventCategory category) {
+        if (category == null) return "#777777"; // Gris par défaut
+
+        switch (category) {
+            case CONCERT:
+                return "#8A2BE2"; // Violet
+            case THEATRE:
+                return "#D32F2F"; // Rouge théâtre
+            case SPORT:
+                return "#E65100"; // Orange dynamique
+            case CONFERENCE:
+                return "#1976D2"; // Bleu professionnel
+            case AUTRE:
+            default:
+                return "#607D8B"; // Gris bleuté
+        }
     }
 }

@@ -95,9 +95,7 @@ public class EventFilterBar extends HorizontalLayout {
         prixMax.clear();
     }
 
-    /* =======================
-       DTO interne
-       ======================= */
+
 
     public static class EventFilter {
         public String keyword;
