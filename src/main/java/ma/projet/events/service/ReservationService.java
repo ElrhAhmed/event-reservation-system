@@ -27,178 +27,151 @@ public class ReservationService {
         this.userRepository = userRepository;
     }
 
-    // ==================== MÉTHODE PRINCIPALE : RÉSERVER UN TICKET ====================
+    // ==================== 1. CLIENT : RÉSERVER (Mise en attente) ====================
 
     @Transactional
     public Reservation reserverTicket(Long eventId, Long userId, int nombrePlacesDemande) {
 
-        // ========== VÉRIFICATIONS DE BASE ==========
-
-        // 1. Vérifier que l'événement existe
+        // --- A. Vérifications ---
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Événement introuvable avec l'ID : " + eventId));
 
-        // 2. Vérifier que l'utilisateur existe
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'ID : " + userId));
 
-        // ========== RÈGLES MÉTIER CRITIQUES ==========
+        // --- B. Règles Métier ---
+        if (nombrePlacesDemande < 1) throw new BusinessException("Le nombre de places doit être au moins 1");
+        if (nombrePlacesDemande > 10) throw new BusinessException("Impossible de réserver plus de 10 places.");
 
-        // RÈGLE 1 : Minimum 1 place
-        if (nombrePlacesDemande < 1) {
-            throw new BusinessException("Le nombre de places doit être au moins 1");
-        }
+        if (event.getStatut() == EventStatus.TERMINE) throw new BusinessException("Cet événement est terminé.");
+        if (event.getStatut() == EventStatus.ANNULE) throw new BusinessException("Cet événement a été annulé.");
+        if (event.getStatut() != EventStatus.PUBLIE) throw new BusinessException("Cet événement n'est pas encore disponible.");
+        if (event.getDateDebut().isBefore(LocalDateTime.now())) throw new BusinessException("L'événement a déjà commencé.");
 
-        // RÈGLE 2 : Maximum 10 places par réservation
-        if (nombrePlacesDemande > 10) {
-            throw new BusinessException("Impossible de réserver plus de 10 places par réservation.");
-        }
-
-        // RÈGLE 3 : L'événement ne doit pas être TERMINE
-        if (event.getStatut() == EventStatus.TERMINE) {
-            throw new BusinessException("Cet événement est terminé, réservation impossible");
-        }
-
-        // RÈGLE 4 : L'événement ne doit pas être ANNULE
-        if (event.getStatut() == EventStatus.ANNULE) {
-            throw new BusinessException("Cet événement a été annulé");
-        }
-
-        // RÈGLE 5 : L'événement doit être PUBLIE
-        if (event.getStatut() != EventStatus.PUBLIE) {
-            throw new BusinessException("Cet événement n'est pas encore disponible à la réservation.");
-        }
-
-        // RÈGLE 6 : L'événement doit être dans le futur
-        if (event.getDateDebut().isBefore(LocalDateTime.now())) {
-            throw new BusinessException("Impossible de réserver : cet événement a déjà commencé");
-        }
-
-        // ========== VÉRIFICATION DE LA DISPONIBILITÉ ==========
-
+        // --- C. Disponibilité (Inclut En Attente + Confirmée) ---
+        // Votre Repository gère cela correctement via la requête (statut != ANNULEE)
         Integer placesDejaReservees = reservationRepository.calculateTotalPlacesReserved(eventId);
-        if (placesDejaReservees == null) {
-            placesDejaReservees = 0;
-        }
+        if (placesDejaReservees == null) placesDejaReservees = 0;
 
         int placesRestantes = event.getCapaciteMax() - placesDejaReservees;
 
-        // RÈGLE 7 : Vérifier qu'il reste assez de places
         if (nombrePlacesDemande > placesRestantes) {
             throw new BusinessException(
-                    String.format("Désolé, impossible de réserver %d place(s). Il ne reste que %d place(s) disponible(s).",
+                    String.format("Impossible de réserver %d place(s). Il ne reste que %d place(s) disponible(s) (y compris celles en attente de validation).",
                             nombrePlacesDemande, placesRestantes)
             );
         }
 
-        // ========== VÉRIFICATION DOUBLON (CORRIGÉ) ==========
+        // --- D. Vérification Doublon ---
+        // On bloque si l'utilisateur a déjà une réservation active (En attente ou Confirmée)
+        boolean aDejaUneReservation = reservationRepository
+                .findByUtilisateurIdAndEvenementId(userId, eventId).stream()
+                .anyMatch(r -> r.getStatut() != ReservationStatus.ANNULEE);
 
-        // On récupère la LISTE des réservations existantes pour ce couple user/event
-        List<Reservation> existingReservations = reservationRepository
-                .findByUtilisateurIdAndEvenementId(userId, eventId);
-
-        // On vérifie s'il y a AU MOINS UNE réservation active (non annulée)
-        Optional<Reservation> reservationActive = existingReservations.stream()
-                .filter(r -> r.getStatut() != ReservationStatus.ANNULEE)
-                .findFirst();
-
-        if (reservationActive.isPresent()) {
-            throw new ConflictException(
-                    "Vous avez déjà une réservation active pour cet événement (Code : " +
-                            reservationActive.get().getCodeReservation() + ")"
-            );
+        if (aDejaUneReservation) {
+            throw new ConflictException("Vous avez déjà une demande en cours pour cet événement.");
         }
 
-        // ========== CRÉATION DE LA RÉSERVATION ==========
-
+        // --- E. Création (Statut EN_ATTENTE) ---
         Reservation reservation = new Reservation();
         reservation.setEvenement(event);
         reservation.setUtilisateur(user);
         reservation.setNombrePlaces(nombrePlacesDemande);
         reservation.setDateReservation(LocalDateTime.now());
-        reservation.setStatut(ReservationStatus.CONFIRMEE);
 
-        // RÈGLE 8 : Calcul automatique du montant total
-        if (event.getPrixUnitaire() != null) {
-            double montantTotal = event.getPrixUnitaire() * nombrePlacesDemande;
-            reservation.setMontantTotal(montantTotal);
-        } else {
-            reservation.setMontantTotal(0.0);
-        }
+        // IMPORTANT : Statut par défaut "En attente" pour validation organisateur
+        reservation.setStatut(ReservationStatus.EN_ATTENTE);
 
-        // RÈGLE 9 : Génération du code unique
-        String codeUnique = generateUniqueReservationCode();
-        reservation.setCodeReservation(codeUnique);
+        // Calcul montant
+        double prix = (event.getPrixUnitaire() != null) ? event.getPrixUnitaire() : 0.0;
+        reservation.setMontantTotal(prix * nombrePlacesDemande);
 
-        // Sauvegarder et retourner
-        Reservation savedReservation = reservationRepository.save(reservation);
+        // Génération Code
+        reservation.setCodeReservation(generateUniqueReservationCode());
 
-        System.out.println("✅ Réservation créée avec succès : " + codeUnique);
+        Reservation saved = reservationRepository.save(reservation);
+        System.out.println("⏳ Demande créée (En attente) : " + saved.getCodeReservation());
 
-        return savedReservation;
+        return saved;
     }
 
-    // ==================== ANNULER UNE RÉSERVATION ====================
+    // ==================== 2. ORGANISATEUR : CONFIRMER ====================
 
     @Transactional
-    public void annulerReservation(Long reservationId, Long userId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Réservation introuvable avec l'ID : " + reservationId));
-
-        if (!reservation.getUtilisateur().getId().equals(userId)) {
-            throw new UnauthorizedException("Vous ne pouvez annuler que vos propres réservations");
-        }
-
-        if (reservation.getStatut() == ReservationStatus.ANNULEE) {
-            throw new BusinessException("Cette réservation est déjà annulée");
-        }
-
-        // Règle 48h
-        LocalDateTime limiteAnnulation = reservation.getEvenement()
-                .getDateDebut()
-                .minusHours(48);
-
-        if (LocalDateTime.now().isAfter(limiteAnnulation)) {
-            long heuresRestantes = java.time.temporal.ChronoUnit.HOURS.between(
-                    LocalDateTime.now(),
-                    reservation.getEvenement().getDateDebut()
-            );
-            // Pour l'affichage positif (0 si négatif)
-            heuresRestantes = Math.max(0, heuresRestantes);
-
-            throw new BusinessException(
-                    "Impossible d'annuler : le délai de 48h avant l'événement est dépassé."
-            );
-        }
-
-        reservation.setStatut(ReservationStatus.ANNULEE);
-        reservation.setCommentaire("Annulée par l'utilisateur le " + LocalDateTime.now());
-        reservationRepository.save(reservation);
-
-        System.out.println("✅ Réservation " + reservation.getCodeReservation() + " annulée avec succès");
-    }
-
-    // ==================== CONFIRMER UNE RÉSERVATION ====================
-
-    @Transactional
-    public Reservation confirmReservation(Long reservationId) {
+    public Reservation confirmReservation(Long reservationId, Long userIdAppelant) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Réservation introuvable"));
 
+        // SÉCURITÉ : On vérifie que c'est bien l'organisateur de l'événement qui confirme
+        if (!reservation.getEvenement().getOrganisateur().getId().equals(userIdAppelant)) {
+            throw new UnauthorizedException("Seul l'organisateur peut confirmer cette réservation.");
+        }
+
+        if (reservation.getStatut() == ReservationStatus.CONFIRMEE) {
+            throw new BusinessException("Cette réservation est déjà confirmée.");
+        }
+
+        if (reservation.getStatut() == ReservationStatus.ANNULEE) {
+            throw new BusinessException("Impossible de confirmer une réservation annulée.");
+        }
+
+        // Seules les réservations en attente peuvent être validées
         if (reservation.getStatut() != ReservationStatus.EN_ATTENTE) {
-            throw new BusinessException("Seule une réservation en attente peut être confirmée");
+            throw new BusinessException("Seule une réservation en attente peut être confirmée.");
         }
 
         reservation.setStatut(ReservationStatus.CONFIRMEE);
         return reservationRepository.save(reservation);
     }
 
-    // ==================== RÉCUPÉRATION DE RÉSERVATIONS ====================
+    // ==================== 3. ANNULER (Client) ou REFUSER (Organisateur) ====================
+
+    @Transactional
+    public void annulerReservation(Long reservationId, Long userIdAppelant) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Réservation introuvable"));
+
+        boolean isClient = reservation.getUtilisateur().getId().equals(userIdAppelant);
+        boolean isOrganisateur = reservation.getEvenement().getOrganisateur().getId().equals(userIdAppelant);
+
+        if (!isClient && !isOrganisateur) {
+            throw new UnauthorizedException("Action non autorisée.");
+        }
+
+        if (reservation.getStatut() == ReservationStatus.ANNULEE) {
+            throw new BusinessException("Cette réservation est déjà annulée");
+        }
+
+        // Règle 48h : Uniquement pour le CLIENT et si la réservation est déjà CONFIRMÉE
+        // Si elle est "En attente", le client peut annuler sans frais/délai.
+        if (isClient && reservation.getStatut() == ReservationStatus.CONFIRMEE) {
+            LocalDateTime limite = reservation.getEvenement().getDateDebut().minusHours(48);
+            if (LocalDateTime.now().isAfter(limite)) {
+                throw new BusinessException("Délai d'annulation dépassé (48h avant l'événement).");
+            }
+        }
+
+        reservation.setStatut(ReservationStatus.ANNULEE);
+
+        if (isOrganisateur) {
+            reservation.setCommentaire("Refusée par l'organisateur.");
+        } else {
+            reservation.setCommentaire("Annulée par le client.");
+        }
+
+        reservationRepository.save(reservation);
+        System.out.println("❌ Réservation annulée/refusée : " + reservation.getCodeReservation());
+    }
+
+    // ==================== 4. LECTURE & FILTRES (Rien ne manque) ====================
 
     public List<Reservation> findUserReservations(Long userId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable : " + userId));
+        userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User introuvable"));
         return reservationRepository.findByUtilisateurId(userId);
+    }
+
+    public List<Reservation> findEventReservations(Long eventId) {
+        return reservationRepository.findByEvenementId(eventId);
     }
 
     public Reservation getReservationByCode(String code) {
@@ -206,110 +179,47 @@ public class ReservationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Aucune réservation trouvée avec le code : " + code));
     }
 
-    public List<Reservation> findEventReservations(Long eventId) {
-        return reservationRepository.findByEvenementId(eventId);
-    }
-
     public List<Reservation> getReservationsWithFilters(Long userId, Long eventId, ReservationStatus statut) {
-        List<Reservation> reservations = reservationRepository.findAll();
-
-        return reservations.stream()
+        return reservationRepository.findAll().stream()
                 .filter(r -> userId == null || r.getUtilisateur().getId().equals(userId))
                 .filter(r -> eventId == null || r.getEvenement().getId().equals(eventId))
                 .filter(r -> statut == null || r.getStatut().equals(statut))
                 .collect(Collectors.toList());
     }
 
-    // ==================== RÉCAPITULATIF ====================
-
-    public Map<String, Object> getReservationSummary(Long reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Réservation introuvable"));
-
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("code", reservation.getCodeReservation());
-        summary.put("eventTitle", reservation.getEvenement().getTitre());
-        summary.put("eventDate", reservation.getEvenement().getDateDebut());
-        summary.put("eventLocation", reservation.getEvenement().getLieu());
-        summary.put("eventCity", reservation.getEvenement().getVille());
-        summary.put("nombrePlaces", reservation.getNombrePlaces());
-        summary.put("montantTotal", reservation.getMontantTotal());
-        summary.put("statut", reservation.getStatut());
-        summary.put("statutLabel", reservation.getStatut().getLabel());
-        summary.put("dateReservation", reservation.getDateReservation());
-        summary.put("clientName", reservation.getUtilisateur().getNomComplet());
-        summary.put("clientEmail", reservation.getUtilisateur().getEmail());
-
-        // Calcul pour isAnnulable
-        boolean isAnnulable = reservation.getStatut() != ReservationStatus.ANNULEE &&
-                LocalDateTime.now().isBefore(reservation.getEvenement().getDateDebut().minusHours(48));
-
-        summary.put("isAnnulable", isAnnulable);
-
-        return summary;
-    }
-
-    // ==================== STATISTIQUES ====================
-
-    public Map<String, Object> getReservationStatistics() {
-        List<Reservation> allReservations = reservationRepository.findAll();
-
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalReservations", allReservations.size());
-
-        long confirmed = allReservations.stream()
-                .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
-                .count();
-        stats.put("confirmedReservations", confirmed);
-
-        long cancelled = allReservations.stream()
-                .filter(r -> r.getStatut() == ReservationStatus.ANNULEE)
-                .count();
-        stats.put("cancelledReservations", cancelled);
-
-        long pending = allReservations.stream()
-                .filter(r -> r.getStatut() == ReservationStatus.EN_ATTENTE)
-                .count();
-        stats.put("pendingReservations", pending);
-
-        double totalRevenue = allReservations.stream()
-                .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
-                .mapToDouble(Reservation::getMontantTotal)
-                .sum();
-        stats.put("totalRevenue", totalRevenue);
-
-        return stats;
-    }
-
-    /**
-     * Vérifier si un utilisateur a déjà réservé pour un événement (CORRIGÉ)
-     */
     public boolean hasUserReservedEvent(Long userId, Long eventId) {
         return reservationRepository.findByUtilisateurIdAndEvenementId(userId, eventId)
                 .stream()
                 .anyMatch(r -> r.getStatut() != ReservationStatus.ANNULEE);
     }
 
-    // ==================== MÉTHODE PRIVÉE : GÉNÉRATION CODE ====================
+    // ==================== 5. RÉSUMÉS & STATISTIQUES ====================
 
-    private String generateUniqueReservationCode() {
-        String code;
-        int tentatives = 0;
-        final int MAX_TENTATIVES = 100;
+    public Map<String, Object> getReservationSummary(Long reservationId) {
+        Reservation r = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Réservation introuvable"));
 
-        do {
-            Random random = new Random();
-            int number = random.nextInt(100000);
-            code = String.format("EVT-%05d", number);
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("code", r.getCodeReservation());
+        summary.put("eventTitle", r.getEvenement().getTitre());
+        summary.put("eventDate", r.getEvenement().getDateDebut());
+        summary.put("eventLocation", r.getEvenement().getLieu());
+        summary.put("nombrePlaces", r.getNombrePlaces());
+        summary.put("montantTotal", r.getMontantTotal());
+        summary.put("statut", r.getStatut());
+        summary.put("statutLabel", r.getStatut().toString());
+        summary.put("clientName", r.getUtilisateur().getNomComplet());
 
-            tentatives++;
-            if (tentatives >= MAX_TENTATIVES) {
-                throw new BusinessException("Erreur lors de la génération du code unique.");
-            }
+        boolean isAnnulable = r.getStatut() != ReservationStatus.ANNULEE &&
+                LocalDateTime.now().isBefore(r.getEvenement().getDateDebut().minusHours(48));
+        summary.put("isAnnulable", isAnnulable);
 
-        } while (reservationRepository.findByCodeReservation(code).isPresent());
+        return summary;
+    }
 
-        return code;
+    public Map<String, Object> getReservationStatistics() {
+        List<Reservation> all = reservationRepository.findAll();
+        return calculateStats(all);
     }
 
     public Map<String, Object> getReservationStatisticsByEvent(Long eventId) {
@@ -317,34 +227,57 @@ public class ReservationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Événement introuvable"));
 
         List<Reservation> reservations = reservationRepository.findByEvenementId(eventId);
+        Map<String, Object> stats = calculateStats(reservations);
 
-        Map<String, Object> stats = new HashMap<>();
         stats.put("eventId", eventId);
         stats.put("eventTitle", event.getTitre());
-        stats.put("totalReservations", reservations.size());
 
-        long confirmed = reservations.stream()
-                .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
-                .count();
-        stats.put("reservationsConfirmees", confirmed);
+        return stats;
+    }
 
-        long cancelled = reservations.stream()
-                .filter(r -> r.getStatut() == ReservationStatus.ANNULEE)
-                .count();
-        stats.put("reservationsAnnulees", cancelled);
+    // Méthode privée pour centraliser le calcul des stats
+    private Map<String, Object> calculateStats(List<Reservation> list) {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalReservations", list.size());
 
-        int totalPlaces = reservations.stream()
-                .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
-                .mapToInt(Reservation::getNombrePlaces)
-                .sum();
-        stats.put("totalPlaces", totalPlaces);
+        long confirmed = list.stream().filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE).count();
+        stats.put("confirmedReservations", confirmed);
+        stats.put("reservationsConfirmees", confirmed); // Alias
 
-        double totalRevenue = reservations.stream()
+        long pending = list.stream().filter(r -> r.getStatut() == ReservationStatus.EN_ATTENTE).count();
+        stats.put("pendingReservations", pending);
+        stats.put("reservationsEnAttente", pending); // Alias
+
+        long cancelled = list.stream().filter(r -> r.getStatut() == ReservationStatus.ANNULEE).count();
+        stats.put("cancelledReservations", cancelled);
+        stats.put("reservationsAnnulees", cancelled); // Alias
+
+        double revenue = list.stream()
                 .filter(r -> r.getStatut() == ReservationStatus.CONFIRMEE)
                 .mapToDouble(r -> r.getMontantTotal() != null ? r.getMontantTotal() : 0.0)
                 .sum();
-        stats.put("totalRevenue", totalRevenue);
+        stats.put("totalRevenue", revenue);
+
+        // Total places occupées (Confirmées + En attente) pour voir le remplissage réel
+        int totalPlaces = list.stream()
+                .filter(r -> r.getStatut() != ReservationStatus.ANNULEE)
+                .mapToInt(Reservation::getNombrePlaces)
+                .sum();
+        stats.put("totalPlacesOccupees", totalPlaces);
 
         return stats;
+    }
+
+    // ==================== 6. UTILITAIRE ====================
+
+    private String generateUniqueReservationCode() {
+        String code;
+        int tentatives = 0;
+        do {
+            code = String.format("EVT-%05d", new Random().nextInt(100000));
+            tentatives++;
+            if (tentatives > 100) throw new BusinessException("Erreur génération code unique.");
+        } while (reservationRepository.findByCodeReservation(code).isPresent());
+        return code;
     }
 }

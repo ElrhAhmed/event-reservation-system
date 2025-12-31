@@ -1,88 +1,102 @@
-/* =========================
-   GLOBAL
-========================= */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
+html {
+    /* 1. TYPOGRAPHIE MODERNE */
+    --lumo-font-family: 'Poppins', sans-serif;
 
-:root {
+    /* 2. COULEURS (INDIGO - VIOLET) */
+    --lumo-primary-color: #6366f1;
+    --lumo-primary-text-color: #4338ca;
+    --lumo-primary-contrast-color: #ffffff;
 
-    --stat-color: var(--lumo-primary-color);
-    --fest-primary: #3c83f6;
-    --fest-primary-text: #ffffff;
-
-    --fest-bg: #f8fafc;
-    --fest-surface: #ffffff;
-
-    --fest-text-main: #0f1729;
-    --fest-text-muted: #64748b;
-
-    --fest-border-radius: 12px;
-    --fest-shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.06);
+    /* 3. FORMES ET OMBRES */
+    --lumo-border-radius-m: 12px;
+    --lumo-border-radius-l: 16px;
+    --lumo-box-shadow-m: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --lumo-box-shadow-l: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-html,
-body {
-    font-family: "Inter", sans-serif;
-    background-color: var(--fest-bg);
-    color: var(--fest-text-main);
+/* === STYLE DE LA CARTE ÉVÉNEMENT === */
+.event-card {
+    background-color: white;
+    border-radius: var(--lumo-border-radius-l);
+    box-shadow: var(--lumo-box-shadow-m);
+    transition: all 0.3s ease;
+    overflow: hidden; /* Important pour que l'image suive l'arrondi */
+    border: 1px solid transparent;
 }
 
-/* =========================
-   TITRES
-========================= */
-h1, h2, h3 {
-    font-weight: 700;
-    margin-bottom: 0.5rem;
+.event-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--lumo-box-shadow-l);
+    border-color: var(--lumo-primary-color);
 }
 
-h1 {
-    font-size: 2.5rem;
+/* Image dans la carte */
+.event-card-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    /* Pas de border-radius ici, c'est géré par le parent overflow:hidden */
 }
 
-h2 {
-    font-size: 1.6rem;
-}
-
-/* =========================
-   CONTAINERS
-========================= */
-.fest-container {
-    max-width: 1200px;
-    margin: auto;
-    padding: 2rem 1rem;
-}
-
-.fest-center {
+/* Placeholder si pas d'image */
+.event-card-placeholder {
+    width: 100%;
+    height: 180px;
+    background-color: var(--lumo-contrast-5pct);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-/* =========================
-   HEADER
-========================= */
-.fest-header {
-    background: var(--fest-surface);
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.fest-logo {
-    font-weight: 700;
-    font-size: 1.4rem;
-    color: var(--fest-primary);
-    text-decoration: none;
-}
-
-/* =========================
-   HERO
-========================= */
-.fest-hero {
-    background: linear-gradient(135deg, #3c83f6, #5a9bff);
+/* === HERO SECTION (ACCUEIL) === */
+.hero-section {
+    background: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
     color: white;
-    padding: 4rem 1rem;
+    /* Centrage parfait */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
+    padding: 4rem 1rem 6rem 1rem; /* Padding bas plus grand pour laisser place à la barre de recherche si elle flotte */
+    min-height: 400px;
+}
+/* Le bouton blanc "Explorer" */
+.hero-btn {
+    background-color: white !important;
+    color: #1a202c !important; /* Texte foncé */
+    font-weight: 600 !important;
+    border-radius: 4px !important; /* Coins légèrement arrondis comme l'image */
+    height: 50px;
+    padding: 0 30px;
+    font-size: 1.1rem;
+    margin-top: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    cursor: pointer;
 }
 
-.fest-hero p {
-    font-size: 1.1rem;
-    opacity: 0.95;
+.hero-btn:hover {
+    background-color: #f7fafc !important; /* Gris très clair au survol */
+}
+
+/* Si vous gardez la barre de recherche flottante de la V1 */
+.floating-search-card {
+    background-color: white;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    border-radius: 12px;
+    /* Important pour qu'elle flotte par dessus le bleu */
+    position: relative;
+    z-index: 10;
+}
+
+
+
+/* === NAVBAR === */
+.navbar-header {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px); /* Effet verre dépoli */
+    border-bottom: 1px solid var(--lumo-contrast-10pct);
 }

@@ -17,11 +17,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Vérifier si un email existe déjà (pour l'inscription)
     boolean existsByEmail(String email);
 
-    // Trouver tous les utilisateurs actifs d'un certain rôle (ex: tous les ORGANIZER actifs)
+    // Trouver tous les utilisateurs actifs d'un certain rôle
     List<User> findByRoleAndActifTrue(Role role);
 
     // Recherche par nom ou prénom (pour l'admin)
-    // IgnoreCase permet de trouver "Dupont" même si on tape "dupont"
     List<User> findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(String nom, String prenom);
 
     // Compter combien on a d'utilisateurs d'un certain rôle

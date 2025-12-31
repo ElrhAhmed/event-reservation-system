@@ -1,21 +1,19 @@
 package ma.projet.events.ui.view.publicview;
 
 import com.vaadin.flow.component.Text;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import ma.projet.events.entity.Event;
-import ma.projet.events.entity.EventStatus;
 import ma.projet.events.service.EventService;
 import ma.projet.events.ui.layout.PublicLayout;
 import ma.projet.events.ui.navigation.NavigationManager;
@@ -31,10 +29,7 @@ public class EventDetailView extends VerticalLayout implements HasUrlParameter<L
 
     private final EventService eventService;
     private final NavigationManager navigationManager;
-
-    // Formatteur spécifique pour correspondre à l'image ("jeudi 20 février 2025")
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.FRENCH);
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
     public EventDetailView(EventService eventService, NavigationManager navigationManager) {
         this.eventService = eventService;
@@ -42,10 +37,8 @@ public class EventDetailView extends VerticalLayout implements HasUrlParameter<L
 
         setWidthFull();
         setPadding(false);
+        setSpacing(false);
         addClassName(LumoUtility.Background.BASE);
-
-        // Conteneur principal centré avec marge en haut
-        setAlignItems(Alignment.CENTER);
     }
 
     @Override
@@ -55,165 +48,182 @@ public class EventDetailView extends VerticalLayout implements HasUrlParameter<L
             Event eventEntity = eventService.getEventById(eventId);
             int availablePlaces = eventService.calculateAvailablePlaces(eventId);
 
-            // Conteneur large max 1200px
-            VerticalLayout container = new VerticalLayout();
-            container.setMaxWidth("1200px");
-            container.setWidthFull();
-            container.setPadding(true);
-            container.setSpacing(true);
+            // --- 1. BANNIÈRE FLOU ---
+            Div banner = new Div();
+            banner.setWidthFull();
+            banner.setHeight("350px");
+            banner.addClassName(LumoUtility.Background.CONTRAST_10);
+            if (eventEntity.getImageUrl() != null) {
+                banner.getStyle()
+                        .set("background-image", "url('" + eventEntity.getImageUrl() + "')")
+                        .set("background-size", "cover")
+                        .set("background-position", "center")
+                        .set("filter", "blur(10px) brightness(0.6)") // Flou + Sombre
+                        .set("transform", "scale(1.1)"); // Zoom léger pour éviter bords blancs du flou
+            }
+            // Position absolue
+            banner.getStyle().set("position", "absolute").set("top", "0").set("left", "0").set("z-index", "0");
+            // Overflow hidden sur le parent pour couper le flou qui dépasse
+            getElement().getStyle().set("overflow-x", "hidden");
 
-            // Construction du layout 2 colonnes
-            HorizontalLayout splitLayout = createSplitLayout(eventEntity, availablePlaces);
-            container.add(splitLayout);
+            // --- 2. CONTENU ---
+            VerticalLayout contentContainer = new VerticalLayout();
+            contentContainer.setMaxWidth("1100px");
+            contentContainer.setWidthFull();
+            contentContainer.addClassNames(LumoUtility.Margin.Horizontal.AUTO);
+            contentContainer.setPadding(true);
+            contentContainer.getStyle().set("z-index", "1"); // Au dessus de la bannière
 
-            add(container);
+            // Spacer pour descendre
+            Div spacer = new Div();
+            spacer.setHeight("100px");
+            contentContainer.add(spacer);
+
+            // Layout 2 colonnes
+            HorizontalLayout split = new HorizontalLayout();
+            split.setWidthFull();
+            split.addClassName(LumoUtility.FlexWrap.WRAP);
+            split.addClassName(LumoUtility.Gap.XLARGE);
+
+            // --- COLONNE GAUCHE ---
+            VerticalLayout leftCol = new VerticalLayout();
+            leftCol.setWidth("60%");
+            leftCol.setMinWidth("320px");
+            leftCol.setSpacing(true);
+
+            // Image Principale Nette
+            Image mainImage = new Image(eventEntity.getImageUrl(), "Cover");
+            mainImage.setWidthFull();
+            mainImage.addClassName(LumoUtility.BorderRadius.LARGE);
+            mainImage.addClassName(LumoUtility.BoxShadow.LARGE);
+            mainImage.getStyle().set("max-height", "450px").set("object-fit", "cover");
+
+            // Titre & Date
+            H1 title = new H1(eventEntity.getTitre());
+            title.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.FontSize.XXLARGE);
+
+            // Description
+            H3 descTitle = new H3("À propos de l'événement");
+            descTitle.addClassName(LumoUtility.Margin.Top.LARGE);
+
+            Paragraph desc = new Paragraph(eventEntity.getDescription());
+            desc.addClassName(LumoUtility.TextColor.SECONDARY);
+            desc.getStyle().set("line-height", "1.7").set("white-space", "pre-line");
+
+            leftCol.add(mainImage, title, descTitle, desc);
+
+            // --- COLONNE DROITE (Sticky) ---
+            VerticalLayout rightCol = createStickyBookingCard(eventEntity, availablePlaces);
+            rightCol.setWidth("35%");
+            rightCol.setMinWidth("300px");
+
+            split.add(leftCol, rightCol);
+            contentContainer.add(split);
+
+            add(banner, contentContainer);
 
         } catch (Exception e) {
+            e.printStackTrace();
             add(new H2("Événement introuvable"));
         }
     }
 
-    private HorizontalLayout createSplitLayout(Event event, int availablePlaces) {
-        HorizontalLayout layout = new HorizontalLayout();
-        layout.setWidthFull();
-        layout.setSpacing(true);
-        // Responsive : Wrap sur mobile
-        layout.addClassName(LumoUtility.FlexWrap.WRAP);
-        layout.addClassName(LumoUtility.Gap.XLARGE); // Grand espace entre les colonnes
-
-        // --- COLONNE GAUCHE (Image + Titre + Desc) ---
-        VerticalLayout leftCol = new VerticalLayout();
-        leftCol.setPadding(false);
-        leftCol.setSpacing(true);
-        leftCol.setWidth("60%"); // Base desktop
-        leftCol.setMinWidth("320px");
-        leftCol.addClassName(LumoUtility.Flex.GROW);
-
-        // 1. Image
-        if (event.getImageUrl() != null) {
-            Image img = new Image(event.getImageUrl(), "Cover");
-            img.setWidthFull();
-            img.setHeight("400px");
-            img.getStyle().set("object-fit", "cover");
-            img.addClassName(LumoUtility.BorderRadius.LARGE);
-            leftCol.add(img);
-        } else {
-            // Fallback
-            Div placeholder = new Div();
-            placeholder.setWidthFull();
-            placeholder.setHeight("400px");
-            placeholder.getStyle().set("background", "#eee");
-            placeholder.addClassName(LumoUtility.BorderRadius.LARGE);
-            leftCol.add(placeholder);
-        }
-
-        // 2. Titre
-        H2 title = new H2(event.getTitre());
-        title.addClassNames(LumoUtility.FontSize.XXLARGE, LumoUtility.Margin.Top.MEDIUM);
-
-        // 3. Description
-        Paragraph desc = new Paragraph(event.getDescription());
-        desc.addClassName(LumoUtility.TextColor.SECONDARY);
-        desc.getStyle().set("line-height", "1.6");
-
-        leftCol.add(title, desc);
-
-        // --- COLONNE DROITE (Card Détails) ---
-        VerticalLayout rightCol = createBookingCard(event, availablePlaces);
-        rightCol.setWidth("35%"); // Base desktop
-        rightCol.setMinWidth("300px");
-        rightCol.addClassName(LumoUtility.Flex.GROW);
-
-        layout.add(leftCol, rightCol);
-        return layout;
-    }
-
-    private VerticalLayout createBookingCard(Event event, int availablePlaces) {
+    private VerticalLayout createStickyBookingCard(Event event, int availablePlaces) {
         VerticalLayout card = new VerticalLayout();
         card.addClassNames(
                 LumoUtility.Background.BASE,
-                LumoUtility.BoxShadow.SMALL, // Ombre légère comme sur l'image
-                LumoUtility.BorderRadius.MEDIUM,
-                LumoUtility.Padding.LARGE,
-                "booking-card" // Classe pour CSS spécifique si besoin
+                LumoUtility.BoxShadow.MEDIUM,
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.Padding.LARGE
         );
-        card.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)"); // Bordure subtile
+        card.getStyle().set("position", "sticky").set("top", "20px");
+        card.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
 
-        // 1. Header (Prix + Badge)
+        // 1. En-tête : Prix + Catégorie
         HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
-        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
         header.setAlignItems(Alignment.CENTER);
 
         H2 price = new H2(PriceFormatter.format(event.getPrixUnitaire()));
         price.addClassNames(LumoUtility.TextColor.PRIMARY, LumoUtility.Margin.NONE);
 
-        Span badge = new Span(event.getStatut() == EventStatus.PUBLIE ? "Actif" : "Inactif");
-        badge.getElement().getThemeList().add("badge success pill"); // Vert et arrondi
+        // MODIFICATION : Badge Catégorie au lieu de Statut
+        Span categoryBadge = new Span(event.getCategorie().getLabel());
+        categoryBadge.getElement().getThemeList().add("badge contrast"); // Badge gris/neutre élégant
+        categoryBadge.getStyle().set("text-transform", "uppercase");
 
-        header.add(price, badge);
+        header.add(price, categoryBadge);
 
-        // 2. Liste des détails (Icônes + Texte)
-        VerticalLayout detailsList = new VerticalLayout();
-        detailsList.setPadding(false);
-        detailsList.setSpacing(true);
-        detailsList.addClassName(LumoUtility.Margin.Vertical.LARGE);
+        // 2. Infos Pratiques
+        VerticalLayout infos = new VerticalLayout();
+        infos.setPadding(false);
+        infos.setSpacing(true);
+        infos.add(createRow(VaadinIcon.CALENDAR, event.getDateDebut().format(DATE_FMT)));
+        infos.add(createRow(VaadinIcon.CLOCK, "À " + event.getDateDebut().format(DateTimeFormatter.ofPattern("HH:mm"))));
+        infos.add(createRow(VaadinIcon.MAP_MARKER, event.getLieu() + ", " + event.getVille()));
 
-        detailsList.add(createDetailRow(VaadinIcon.CALENDAR, event.getDateDebut().format(DATE_FMT)));
-        detailsList.add(createDetailRow(VaadinIcon.CLOCK, event.getDateDebut().format(TIME_FMT)));
-        detailsList.add(createDetailRow(VaadinIcon.MAP_MARKER, event.getLieu() + ", " + event.getVille()));
-        detailsList.add(createDetailRow(VaadinIcon.TAG, event.getCategorie().getLabel()));
+        // 3. MODIFICATION : Barre de progression (Places restantes)
+        VerticalLayout progressSection = new VerticalLayout();
+        progressSection.setPadding(false);
+        progressSection.setSpacing(false);
+        progressSection.addClassName(LumoUtility.Margin.Top.MEDIUM);
 
-        // Places restantes (Icone user outline)
-        String capacityText = availablePlaces + " places restantes sur " + event.getCapaciteMax();
-        detailsList.add(createDetailRow(VaadinIcon.USER, capacityText));
+        int totalPlaces = event.getCapaciteMax();
+        int reserved = totalPlaces - availablePlaces;
+        double progressValue = (double) reserved / totalPlaces;
 
-        // 3. Bouton Action
-        Button actionBtn = new Button("Réserver maintenant");
-        actionBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
-        actionBtn.setWidthFull();
+        ProgressBar progressBar = new ProgressBar();
+        progressBar.setValue(progressValue);
+        // Change la couleur si presque complet (>80%)
+        if (progressValue > 0.8) {
+            progressBar.addThemeVariants(com.vaadin.flow.component.progressbar.ProgressBarVariant.LUMO_ERROR);
+        }
 
-        // Logique bouton
+        Span placesText = new Span(availablePlaces + " places restantes sur " + totalPlaces);
+        placesText.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
+        placesText.getStyle().set("margin-top", "5px");
+
+        progressSection.add(progressBar, placesText);
+
+        // 4. Bouton Action
+        Button bookBtn = new Button("Réserver maintenant");
+        bookBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
+        bookBtn.setWidthFull();
+        bookBtn.addClassName(LumoUtility.Margin.Top.MEDIUM);
+
         if (availablePlaces <= 0) {
-            actionBtn.setText("Complet");
-            actionBtn.setEnabled(false);
+            bookBtn.setText("Complet");
+            bookBtn.setEnabled(false);
+            bookBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
         } else {
-            actionBtn.addClickListener(e -> {
+            bookBtn.addClickListener(e -> {
                 if(navigationManager.isAuthenticated()) {
                     navigationManager.goToReservation(event.getId());
                 } else {
-                    Notification.show("Connexion requise");
+                    Notification.show("Connectez-vous pour réserver");
                     navigationManager.goToLogin();
                 }
             });
         }
 
-        // Texte d'aide sous le bouton
-        Span helpText = new Span("Vous devrez vous connecter pour réserver");
-        helpText.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY, LumoUtility.TextAlignment.CENTER);
-        helpText.setWidthFull();
-
-        // 4. Footer (Organisateur)
-        Hr separator = new Hr();
-        separator.addClassName(LumoUtility.Margin.Vertical.MEDIUM);
-
-        Span orgText = new Span();
-        orgText.add(new Text("Organisé par "));
+        // 5. Organisateur
+        Div organizerInfo = new Div();
+        organizerInfo.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.Display.FLEX, LumoUtility.AlignItems.CENTER, LumoUtility.Gap.SMALL);
+        organizerInfo.add(new Text("Organisé par "));
         Span orgName = new Span(event.getOrganisateur().getNomComplet());
-        orgName.addClassName(LumoUtility.TextColor.HEADER); // Plus foncé
-        orgText.add(orgName);
-        orgText.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+        orgName.addClassName(LumoUtility.FontWeight.BOLD);
+        organizerInfo.add(orgName);
+        organizerInfo.getStyle().set("font-size", "0.9rem").set("color", "var(--lumo-secondary-text-color)");
 
-        card.add(header, detailsList, actionBtn, helpText, separator, orgText);
+        card.add(header, new Hr(), infos, progressSection, bookBtn, organizerInfo);
         return card;
     }
 
-    // Helper pour créer les lignes avec icônes proprement
-    private HorizontalLayout createDetailRow(VaadinIcon icon, String text) {
+    private HorizontalLayout createRow(VaadinIcon icon, String text) {
         Icon i = icon.create();
-        i.setSize("18px"); // Taille modérée
-        i.addClassName(LumoUtility.TextColor.SECONDARY); // Gris foncé
-
+        i.setSize("18px");
+        i.addClassName(LumoUtility.TextColor.PRIMARY);
         Span s = new Span(text);
         s.addClassNames(LumoUtility.FontSize.MEDIUM, LumoUtility.TextColor.BODY);
 

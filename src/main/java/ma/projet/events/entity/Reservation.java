@@ -30,7 +30,7 @@ public class Reservation {
     private Long id;
 
     @Column(unique = true, nullable = false, updatable = false, length = 20)
-    private String codeReservation; // Format EVT-XXXXX
+    private String codeReservation;
 
     @NotNull(message = "Le nombre de places est obligatoire")
     @Min(value = 1, message = "Il faut réserver au moins 1 place")
@@ -53,20 +53,20 @@ public class Reservation {
     private ReservationStatus statut;
 
     @Column(length = 500)
-    private String commentaire; // Optionnel
+    private String commentaire;
 
     // ==================== RELATIONS ====================
 
     // Une réservation appartient à un utilisateur
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    @ToString.Exclude  // <--- AJOUTE CECI
+    @ToString.Exclude
     private User utilisateur;
 
     // Une réservation concerne un événement
     @ManyToOne
     @JoinColumn(name = "event_id", nullable = false)
-    @ToString.Exclude  // <--- AJOUTE CECI
+    @ToString.Exclude
     private Event evenement;
 
     // ==================== HOOKS ====================
@@ -74,6 +74,7 @@ public class Reservation {
     /**
      * Appelée automatiquement avant la première sauvegarde en base
      */
+
     @PrePersist
     protected void onCreate() {
         if (dateReservation == null) {

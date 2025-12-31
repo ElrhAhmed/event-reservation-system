@@ -1,85 +1,97 @@
 package ma.projet.events.ui.component.card;
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 
 public class StatCard extends Div {
 
-    private final Span titleSpan = new Span();
-    private final Span valueSpan = new Span();
-    private final Span subtitleSpan = new Span();
-    private Icon icon;
+    // On garde des références vers les textes pour pouvoir les modifier (setters)
+    private final Span valSpan;
+    private final Span subSpan;
 
+    // Constructeur principal
+    public StatCard(String title, String value, VaadinIcon icon, String subtitle, String colorHex) {
+        addClassNames(
+                LumoUtility.Background.BASE,
+                LumoUtility.BoxShadow.SMALL,
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.Padding.MEDIUM,
+                LumoUtility.Display.FLEX,
+                LumoUtility.AlignItems.CENTER,
+                LumoUtility.Gap.MEDIUM,
+                LumoUtility.Position.RELATIVE,
+                LumoUtility.Overflow.HIDDEN
+        );
+
+        // Bordure latérale colorée
+        if(colorHex != null) {
+            getStyle().set("border-left", "5px solid " + colorHex);
+        }
+
+        // 1. Icone (Dans un cercle coloré léger)
+        Div iconBox = new Div();
+        iconBox.addClassNames(
+                LumoUtility.Display.FLEX,
+                LumoUtility.AlignItems.CENTER,
+                LumoUtility.JustifyContent.CENTER,
+                LumoUtility.BorderRadius.MEDIUM
+        );
+        iconBox.setWidth("48px");
+        iconBox.setHeight("48px");
+
+        if (colorHex != null) {
+            iconBox.getStyle().set("background-color", colorHex + "20"); // 12% opacité
+        }
+
+        if (icon != null) {
+            Icon i = icon.create();
+            i.setSize("24px");
+            if (colorHex != null) i.getStyle().set("color", colorHex);
+            iconBox.add(i);
+        }
+
+        // 2. Textes
+        VerticalLayout info = new VerticalLayout();
+        info.setPadding(false);
+        info.setSpacing(false);
+
+        // Valeur (ex: "120")
+        valSpan = new Span(value);
+        valSpan.addClassNames(LumoUtility.FontSize.XXLARGE, LumoUtility.FontWeight.BOLD, LumoUtility.LineHeight.SMALL);
+
+        // Titre (ex: "Réservations")
+        Span lblSpan = new Span(title);
+        lblSpan.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
+
+        // Sous-titre (ex: "+5% cette semaine")
+        subSpan = new Span(subtitle != null ? subtitle : "");
+        subSpan.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.TERTIARY);
+        subSpan.setVisible(subtitle != null && !subtitle.isEmpty());
+
+        info.add(valSpan, lblSpan, subSpan);
+
+        add(iconBox, info);
+    }
+
+    // --- CONSTRUCTEURS DE COMPATIBILITÉ (Pour ne pas casser l'ancien code) ---
+
+    // Constructeur simple utilisé par certaines vues
     public StatCard(String title, String value) {
         this(title, value, null, null, null);
     }
 
-    public StatCard(
-            String title,
-            String value,
-            VaadinIcon iconType,
-            String subtitle,
-            String themeColor
-    ) {
-        addClassName("stat-card");
-
-        VerticalLayout content = new VerticalLayout();
-        content.setPadding(false);
-        content.setSpacing(false);
-        content.addClassName("stat-card-content");
-
-        if (iconType != null) {
-            icon = iconType.create();
-            icon.addClassName("stat-card-icon");
-            content.add(icon);
-        }
-
-        titleSpan.setText(title);
-        titleSpan.addClassName("stat-card-title");
-
-        valueSpan.setText(value);
-        valueSpan.addClassName("stat-card-value");
-
-        content.add(titleSpan, valueSpan);
-
-        if (subtitle != null) {
-            subtitleSpan.setText(subtitle);
-            subtitleSpan.addClassName("stat-card-subtitle");
-            content.add(subtitleSpan);
-        }
-
-        if (themeColor != null) {
-            getStyle().set("--stat-color", themeColor);
-        }
-
-        add(content);
-    }
-
-    /* =========================
-       SETTERS DYNAMIQUES
-       ========================= */
+    // --- SETTERS (Pour corriger vos erreurs dans EventReservationsView) ---
 
     public void setValue(String value) {
-        valueSpan.setText(value);
+        valSpan.setText(value);
     }
 
     public void setSubtitle(String subtitle) {
-        subtitleSpan.setText(subtitle);
-        if (!getChildren().anyMatch(c -> c == subtitleSpan)) {
-            add(subtitleSpan);
-        }
-    }
-
-    public void setIcon(VaadinIcon iconType) {
-        if (icon != null) {
-            remove(icon);
-        }
-        icon = iconType.create();
-        icon.addClassName("stat-card-icon");
-        getChildren().findFirst().ifPresent(c -> ((Component) c).getElement().insertChild(0, icon.getElement()));
+        subSpan.setText(subtitle);
+        subSpan.setVisible(subtitle != null && !subtitle.isEmpty());
     }
 }

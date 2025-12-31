@@ -24,11 +24,9 @@ import ma.projet.events.ui.component.form.EventForm;
 import ma.projet.events.ui.layout.OrganizerLayout;
 import ma.projet.events.ui.navigation.NavigationManager;
 import ma.projet.events.ui.util.DateFormatter;
-import ma.projet.events.ui.util.PriceFormatter;
 
 import java.util.Optional;
 
-// On mappe deux routes sur la même classe
 @Route(value = "organizer/event/edit/:eventID", layout = OrganizerLayout.class)
 @RouteAlias(value = "organizer/event/new", layout = OrganizerLayout.class)
 @PageTitle("Éditer Événement | FESTIVENT")
@@ -53,36 +51,50 @@ public class EventFormView extends VerticalLayout implements BeforeEnterObserver
         this.securityService = securityService;
         this.navigationManager = navigationManager;
 
-        addClassName(LumoUtility.Background.BASE);
+        // Configuration de la page (Fond gris, centrage)
+        addClassName(LumoUtility.Background.CONTRAST_5);
+        setSizeFull();
         setPadding(true);
-        setSpacing(true);
-        // Centrer le formulaire
-        setMaxWidth("900px");
-        addClassName(LumoUtility.Margin.Horizontal.AUTO);
+        setAlignItems(Alignment.CENTER);
+        setJustifyContentMode(JustifyContentMode.CENTER);
 
-        // Header
-        add(createHeader());
+        // --- CARTE DU FORMULAIRE ---
+        VerticalLayout card = new VerticalLayout();
+        card.setMaxWidth("800px"); // Largeur contrôlée
+        card.setWidthFull();
+        card.setPadding(true);
+        card.setSpacing(true);
+
+        // Style Carte
+        card.addClassNames(
+                LumoUtility.Background.BASE,
+                LumoUtility.BoxShadow.MEDIUM,
+                LumoUtility.BorderRadius.LARGE
+        );
+
+        // Header dans la carte
+        H2 title = new H2("Détails de l'événement");
+        title.addClassNames(LumoUtility.FontSize.XLARGE, LumoUtility.Margin.Bottom.NONE, LumoUtility.Margin.Top.NONE);
+
+        Span subtitle = new Span("Remplissez les informations ci-dessous pour créer ou modifier votre événement.");
+        subtitle.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
 
         // Formulaire
         form = new EventForm();
+        form.addClassName(LumoUtility.Padding.Horizontal.NONE); // Enlève le padding latéral interne
+
+        // Listeners
         form.addSaveDraftListener(this::saveDraft);
         form.addPublishListener(this::publish);
         form.addPreviewListener(this::preview);
         form.addCancelListener(e -> navigationManager.goToMyEvents());
 
-        add(form);
-    }
+        card.add(title, subtitle, new Hr(), form);
 
-    private HorizontalLayout createHeader() {
-        H2 title = new H2("Détails de l'événement");
-        title.addClassNames(LumoUtility.Margin.Bottom.NONE);
-        Span subtitle = new Span("Remplissez les informations ci-dessous. Les champs obligatoires sont requis pour la publication.");
-        subtitle.addClassName(LumoUtility.TextColor.SECONDARY);
+        // On rend la carte scrollable si l'écran est trop petit en hauteur
+        card.getStyle().set("overflow-y", "auto");
 
-        VerticalLayout vl = new VerticalLayout(title, subtitle);
-        vl.setSpacing(false);
-        vl.setPadding(false);
-        return new HorizontalLayout(vl);
+        add(card);
     }
 
     @Override
@@ -124,7 +136,7 @@ public class EventFormView extends VerticalLayout implements BeforeEnterObserver
         return userService.getUserByEmail(userDetails.getUsername());
     }
 
-    // --- ACTIONS ---
+    // --- LOGIQUE MÉTIER ---
 
     private void saveDraft(EventForm.SaveDraftEvent event) {
         try {
@@ -175,17 +187,15 @@ public class EventFormView extends VerticalLayout implements BeforeEnterObserver
     }
 
     private void preview(EventForm.PreviewEvent event) {
-        // On récupère les données "dirty" du formulaire pour l'aperçu, sans sauvegarder
+        // On récupère les données "dirty" du formulaire pour l'aperçu
         Event previewEvent = new Event();
-        // Copie basique pour l'affichage
         form.writeBeanIfValid(previewEvent);
-        // On remet les valeurs non formulaires (Statut, etc)
         previewEvent.setStatut(currentEvent.getStatut() != null ? currentEvent.getStatut() : EventStatus.BROUILLON);
 
         showPreviewDialog(previewEvent);
     }
 
-    // --- DIALOGUE APERÇU (Réutilisation logique MyEventsView) ---
+    // --- DIALOGUE APERÇU ---
     private void showPreviewDialog(Event event) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Prévisualisation");
@@ -200,6 +210,7 @@ public class EventFormView extends VerticalLayout implements BeforeEnterObserver
             image.setWidthFull();
             image.setHeight("200px");
             image.getStyle().set("object-fit", "cover");
+            image.addClassName(LumoUtility.BorderRadius.MEDIUM);
             content.add(image);
         }
 
@@ -213,6 +224,7 @@ public class EventFormView extends VerticalLayout implements BeforeEnterObserver
         details.setSpacing(true);
 
         Paragraph desc = new Paragraph(event.getDescription() != null ? event.getDescription() : "Aucune description");
+        desc.addClassName(LumoUtility.TextColor.SECONDARY);
 
         content.add(title, badge, details, desc);
 
@@ -225,6 +237,7 @@ public class EventFormView extends VerticalLayout implements BeforeEnterObserver
     private HorizontalLayout createDetailItem(VaadinIcon icon, String text) {
         Icon i = icon.create();
         i.setSize("18px");
+        i.addClassName(LumoUtility.TextColor.SECONDARY);
         return new HorizontalLayout(i, new Span(text != null ? text : "--"));
     }
 

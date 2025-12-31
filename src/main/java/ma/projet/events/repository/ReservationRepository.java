@@ -16,40 +16,40 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     // ==================== MÉTHODES DE BASE ====================
 
-    /**
-     * Trouver toutes les réservations d'un utilisateur
-     */
+
+     //Trouver toutes les réservations d'un utilisateur
+
     List<Reservation> findByUtilisateurId(Long utilisateurId);
 
-    /**
-     * Trouver toutes les réservations d'un événement
-     */
+
+     // Trouver toutes les réservations d'un événement
+
     List<Reservation> findByEvenementId(Long evenementId);
 
-    /**
-     * Trouver une réservation par son code unique
-     */
+
+     // Trouver une réservation par son code unique
+
     Optional<Reservation> findByCodeReservation(String codeReservation);
 
     // ==================== MÉTHODES AVEC FILTRES ====================
 
-    /**
-     * Trouver les réservations d'un événement avec un statut donné
-     */
+
+     // Trouver les réservations d'un événement avec un statut donné
+
     List<Reservation> findByEvenementIdAndStatut(Long evenementId, ReservationStatus statut);
 
-    /**
-     * Trouver les réservations d'un utilisateur avec un statut donné
-     */
+
+     // Trouver les réservations d'un utilisateur avec un statut donné
+
     List<Reservation> findByUtilisateurIdAndStatut(Long userId, ReservationStatus statut);
 
-    /**
-     * CORRECTION BUG CRITIQUE : Retourne une LISTE pour gérer les potentiels doublons
-     * (évite le crash NonUniqueResultException)
-     */
+
+
+     // Retourne une LISTE pour gérer les potentiels doublons
+
     List<Reservation> findByUtilisateurIdAndEvenementId(Long userId, Long eventId);
 
-    // ==================== MÉTHODES AVEC @Query ====================
+    // ==================== MÉTHODES  ====================
 
     /**
      * Calculer le nombre total de places réservées pour un événement
@@ -69,15 +69,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             "AND r.statut = 'CONFIRMEE'")
     Double calculateTotalAmountByUser(@Param("userId") Long userId);
 
-    // ==================== MÉTHODES DE COMPTAGE ====================
 
+    //methodes de comptage
     Long countByUtilisateurId(Long userId);
 
     Long countByEvenementId(Long eventId);
 
     Long countByStatut(ReservationStatus statut);
 
-    // ==================== RECHERCHE PAR DATE ====================
+    //Recherche par date
 
     List<Reservation> findByDateReservationBetween(LocalDateTime dateDebut, LocalDateTime dateFin);
 
@@ -89,11 +89,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("dateFin") LocalDateTime dateFin
     );
 
-    // ==================== MÉTHODES AVANCÉES ====================
 
-    /**
-     * Trouver les réservations confirmées d'un utilisateur triées par date d'événement
-     */
+
+     // Trouver les réservations confirmées d'un utilisateur triées par date d'événement
+
     @Query("SELECT r FROM Reservation r " +
             "WHERE r.utilisateur.id = :userId " +
             "AND r.statut = 'CONFIRMEE' " +
@@ -101,17 +100,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             "ORDER BY r.evenement.dateDebut ASC")
     List<Reservation> findUpcomingReservationsByUser(@Param("userId") Long userId);
 
-    /**
-     * Trouver les réservations qui arrivent bientôt
-     */
+
+     // Trouver les réservations qui arrivent bientôt
+
     @Query("SELECT r FROM Reservation r " +
             "WHERE r.statut = 'CONFIRMEE' " +
             "AND r.evenement.dateDebut BETWEEN CURRENT_TIMESTAMP AND :dateLimit")
     List<Reservation> findReservationsComingSoon(@Param("dateLimit") LocalDateTime dateLimit);
 
-    /**
-     * Obtenir les statistiques par événement (pour organisateur)
-     */
+
+     // Obtenir les statistiques par événement (pour organisateur)
+
     @Query("SELECT r.evenement.id, COUNT(r), SUM(r.nombrePlaces), SUM(r.montantTotal) " +
             "FROM Reservation r " +
             "WHERE r.evenement.organisateur.id = :organizerId " +
@@ -119,25 +118,25 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             "GROUP BY r.evenement.id")
     List<Object[]> getStatisticsByOrganizer(@Param("organizerId") Long organizerId);
 
-    /**
-     * Vérifier s'il existe des réservations non annulées pour un événement
-     */
+
+     // Vérifier s'il existe des réservations non annulées pour un événement
+
     @Query("SELECT COUNT(r) > 0 FROM Reservation r " +
             "WHERE r.evenement.id = :eventId " +
             "AND r.statut != 'ANNULEE'")
     boolean hasActiveReservations(@Param("eventId") Long eventId);
 
-    /**
-     * Obtenir les X dernières réservations d'un utilisateur
-     */
+
+     // Obtenir les X dernières réservations d'un utilisateur
+
     @Query("SELECT r FROM Reservation r " +
             "WHERE r.utilisateur.id = :userId " +
             "ORDER BY r.dateReservation DESC")
     List<Reservation> findRecentReservationsByUser(@Param("userId") Long userId);
 
-    /**
-     * Calculer le taux de remplissage d'un événement
-     */
+
+     // Calculer le taux de remplissage d'un événement
+
     @Query("SELECT (CAST(SUM(r.nombrePlaces) AS double) / e.capaciteMax) * 100 " +
             "FROM Reservation r " +
             "JOIN r.evenement e " +

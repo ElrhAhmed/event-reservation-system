@@ -9,11 +9,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * Point d'entrée de l'application Festivent
  *
- * @Theme active le thème personnalisé dans frontend/themes/festivent/
+
  * @EnableScheduling active les jobs planifiés (EventService. checkAndMarkFinishedEvents)
  */
 @SpringBootApplication
-
+@Theme("festivent")
 @EnableScheduling
 public class Application implements AppShellConfigurator {
 

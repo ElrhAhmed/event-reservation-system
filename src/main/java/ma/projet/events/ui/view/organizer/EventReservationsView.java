@@ -9,7 +9,6 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -69,7 +68,7 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
     private TextField searchField;
     private ComboBox<ReservationStatus> statusFilter;
 
-    // KPIs Components (pour mise à jour dynamique)
+    // KPIs (Cartes stats)
     private StatCard totalResaCard;
     private StatCard revenueCard;
     private StatCard seatsCard;
@@ -99,7 +98,7 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
                 Long eventId = Long.parseLong(eventIdParam.get());
                 currentEvent = eventService.getEventById(eventId);
 
-                // Sécurité : Vérifier appartenance (sauf Admin)
+                // Sécurité : Vérifier appartenance
                 User user = getCurrentUser();
                 if (!currentEvent.getOrganisateur().getId().equals(user.getId()) && !user.isAdmin()) {
                     showError("Accès refusé.");
@@ -107,7 +106,6 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
                     return;
                 }
 
-                // Construction UI une fois l'événement chargé
                 removeAll();
                 buildUI();
                 refreshData();
@@ -120,7 +118,7 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
     }
 
     private void buildUI() {
-        // 1. Header & KPIs
+        // 1. Header & Stats
         add(createHeader(), createKpiSection());
 
         // 2. Toolbar & Grid
@@ -133,7 +131,7 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
         backBtn.addClickListener(e -> navigationManager.goToMyEvents());
 
         H2 title = new H2("Réservations : " + currentEvent.getTitre());
-        title.addClassName(LumoUtility.Margin.NONE);
+        title.addClassNames(LumoUtility.FontSize.XLARGE, LumoUtility.Margin.NONE);
 
         HorizontalLayout header = new HorizontalLayout(backBtn, title);
         header.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -147,9 +145,9 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
         layout.addClassName(LumoUtility.Gap.MEDIUM);
 
         // Initialisation des cartes (valeurs mises à jour par refreshData)
-        totalResaCard = new StatCard("Total Commandes", "0", VaadinIcon.FILE_TEXT, "Toutes demandes", null);
-        revenueCard = new StatCard("Chiffre d'Affaires", "0 DH", VaadinIcon.MONEY, "Confirmé", "var(--lumo-success-color)");
-        seatsCard = new StatCard("Places Vendues", "0", VaadinIcon.TICKET, "Sur " + currentEvent.getCapaciteMax(), "var(--lumo-primary-color)");
+        totalResaCard = new StatCard("Commandes", "0", VaadinIcon.FILE_TEXT, "Total", "#6366f1");
+        revenueCard = new StatCard("Revenus", "0 DH", VaadinIcon.MONEY, "Confirmé", "#10b981");
+        seatsCard = new StatCard("Places", "0", VaadinIcon.TICKET, "Sur " + currentEvent.getCapaciteMax(), "#f59e0b");
 
         styleCard(totalResaCard);
         styleCard(revenueCard);
@@ -178,7 +176,6 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
         statusFilter.setClearButtonVisible(true);
         statusFilter.addValueChangeListener(e -> updateFilter());
 
-        // Bouton Export CSV
         Button exportBtn = new Button("Exporter CSV", new Icon(VaadinIcon.DOWNLOAD));
         exportBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
@@ -188,22 +185,93 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
 
         HorizontalLayout toolbar = new HorizontalLayout(searchField, statusFilter, downloadLink);
         toolbar.setWidthFull();
-        toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN); // Export à droite
+        toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
         return toolbar;
+    }
+
+    private Component createGrid() {
+        grid = new Grid<>(Reservation.class, false);
+        grid.setSizeFull();
+        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_NO_BORDER);
+
+        // Grid Container
+        VerticalLayout gridWrapper = new VerticalLayout(grid);
+        gridWrapper.addClassNames(LumoUtility.Background.BASE, LumoUtility.BoxShadow.SMALL, LumoUtility.BorderRadius.LARGE, LumoUtility.Overflow.HIDDEN);
+        gridWrapper.setPadding(false);
+        gridWrapper.setSizeFull();
+
+        grid.addColumn(Reservation::getCodeReservation).setHeader("Code").setAutoWidth(true).setSortable(true);
+        grid.addColumn(r -> r.getUtilisateur().getNomComplet()).setHeader("Client").setAutoWidth(true).setSortable(true);
+        grid.addColumn(r -> DateFormatter.format(r.getDateReservation())).setHeader("Date").setAutoWidth(true).setSortable(true);
+        grid.addColumn(Reservation::getNombrePlaces).setHeader("Places").setTextAlign(com.vaadin.flow.component.grid.ColumnTextAlign.END);
+        grid.addColumn(r -> PriceFormatter.format(r.getMontantTotal())).setHeader("Total").setTextAlign(com.vaadin.flow.component.grid.ColumnTextAlign.END);
+        grid.addColumn(new ComponentRenderer<>(r -> new StatusBadge(r.getStatut().getLabel(), r.getStatut().getColor()))).setHeader("Statut");
+        grid.addComponentColumn(this::createActions).setHeader("Actions");
+
+        return gridWrapper;
+    }
+
+    private Component createActions(Reservation reservation) {
+        HorizontalLayout actions = new HorizontalLayout();
+
+        if (reservation.getStatut() == ReservationStatus.EN_ATTENTE) {
+            Button confirmBtn = new Button(new Icon(VaadinIcon.CHECK));
+            confirmBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL);
+            confirmBtn.setTooltipText("Confirmer");
+            confirmBtn.addClickListener(e -> handleConfirm(reservation));
+            actions.add(confirmBtn);
+        }
+
+        if (reservation.getStatut() != ReservationStatus.ANNULEE) {
+            Button cancelBtn = new Button(new Icon(VaadinIcon.CLOSE_SMALL));
+            cancelBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL);
+            cancelBtn.setTooltipText("Annuler");
+            cancelBtn.addClickListener(e -> handleCancel(reservation));
+            actions.add(cancelBtn);
+        }
+
+        return actions;
+    }
+
+    // --- DATA & LOGIQUE ---
+
+    private void refreshData() {
+        // Liste
+        List<Reservation> reservations = reservationService.findEventReservations(currentEvent.getId());
+        dataView = grid.setItems(reservations);
+        updateFilter();
+
+        // Stats
+        Map<String, Object> stats = reservationService.getReservationStatisticsByEvent(currentEvent.getId());
+
+        revenueCard.setValue(PriceFormatter.format(safeGetDouble(stats, "totalRevenue")));
+        seatsCard.setValue(String.valueOf(safeGetInt(stats, "totalPlaces")));
+        totalResaCard.setValue(String.valueOf(safeGetLong(stats, "totalReservations")));
+
+        long annul = safeGetLong(stats, "reservationsAnnulees");
+        totalResaCard.setSubtitle(annul > 0 ? annul + " annulées" : "");
+    }
+
+    private void updateFilter() {
+        if (dataView == null) return;
+        dataView.setFilter(r -> {
+            String search = searchField.getValue().trim().toLowerCase();
+            boolean matchSearch = search.isEmpty() ||
+                    r.getCodeReservation().toLowerCase().contains(search) ||
+                    r.getUtilisateur().getNomComplet().toLowerCase().contains(search);
+            boolean matchStatus = statusFilter.getValue() == null || r.getStatut() == statusFilter.getValue();
+            return matchSearch && matchStatus;
+        });
     }
 
     private StreamResource getExportResource() {
         return new StreamResource("reservations.csv", () -> {
             StringBuilder sb = new StringBuilder();
-            sb.append("Code;Client;Email;Date;Places;Montant;Statut\n");
-
-            // On récupère les données actuelles (filtrées ou non, ici on prend tout pour l'export)
+            sb.append("Code;Client;Date;Places;Montant;Statut\n");
             List<Reservation> items = reservationService.findEventReservations(currentEvent.getId());
-
             for (Reservation r : items) {
                 sb.append(r.getCodeReservation()).append(";")
                         .append(r.getUtilisateur().getNomComplet()).append(";")
-                        .append(r.getUtilisateur().getEmail()).append(";")
                         .append(DateFormatter.format(r.getDateReservation())).append(";")
                         .append(r.getNombrePlaces()).append(";")
                         .append(r.getMontantTotal()).append(";")
@@ -213,131 +281,23 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
         });
     }
 
-    private Component createGrid() {
-        grid = new Grid<>(Reservation.class, false);
-        grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_NO_BORDER);
-
-        // Colonnes
-        grid.addColumn(Reservation::getCodeReservation)
-                .setHeader("Code")
-                .setAutoWidth(true)
-                .setSortable(true);
-
-        grid.addColumn(r -> r.getUtilisateur().getNomComplet())
-                .setHeader("Client")
-                .setAutoWidth(true)
-                .setSortable(true);
-
-        grid.addColumn(r -> DateFormatter.format(r.getDateReservation()))
-                .setHeader("Date")
-                .setAutoWidth(true)
-                .setSortable(true);
-
-        grid.addColumn(Reservation::getNombrePlaces)
-                .setHeader("Places")
-                .setAutoWidth(true)
-                .setTextAlign(com.vaadin.flow.component.grid.ColumnTextAlign.END);
-
-        grid.addColumn(r -> PriceFormatter.format(r.getMontantTotal()))
-                .setHeader("Total")
-                .setAutoWidth(true)
-                .setTextAlign(com.vaadin.flow.component.grid.ColumnTextAlign.END);
-
-        grid.addColumn(new ComponentRenderer<>(r ->
-                new StatusBadge(r.getStatut().getLabel(), r.getStatut().getColor())
-        )).setHeader("Statut").setAutoWidth(true);
-
-        // Actions
-        grid.addComponentColumn(this::createActions).setHeader("Actions");
-
-        return grid;
-    }
-
-    private Component createActions(Reservation reservation) {
-        HorizontalLayout actions = new HorizontalLayout();
-
-        // Confirmer (Uniquement si En Attente)
-        if (reservation.getStatut() == ReservationStatus.EN_ATTENTE) {
-            Button confirmBtn = new Button(new Icon(VaadinIcon.CHECK));
-            confirmBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL);
-            confirmBtn.setTooltipText("Confirmer la réservation");
-            confirmBtn.addClickListener(e -> handleConfirm(reservation));
-            actions.add(confirmBtn);
-        }
-
-        // Annuler (Si non annulée)
-        if (reservation.getStatut() != ReservationStatus.ANNULEE) {
-            Button cancelBtn = new Button(new Icon(VaadinIcon.CLOSE_SMALL));
-            cancelBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL);
-            cancelBtn.setTooltipText("Annuler la réservation");
-            cancelBtn.addClickListener(e -> handleCancel(reservation));
-            actions.add(cancelBtn);
-        }
-
-        return actions;
-    }
-
-    /* =========================
-       LOGIQUE & DATA
-       ========================= */
-
-    private void refreshData() {
-        // 1. Liste
-        List<Reservation> reservations = reservationService.findEventReservations(currentEvent.getId());
-        dataView = grid.setItems(reservations);
-        updateFilter(); // Ré-applique les filtres si existants
-
-        // 2. Stats (Utilisation de safeGet pour robustesse)
-        Map<String, Object> stats = reservationService.getReservationStatisticsByEvent(currentEvent.getId());
-
-        revenueCard.setValue(PriceFormatter.format(safeGetDouble(stats, "totalRevenue")));
-        seatsCard.setValue(String.valueOf(safeGetInt(stats, "totalPlaces")));
-        totalResaCard.setValue(String.valueOf(safeGetLong(stats, "totalReservations")));
-
-        // Sous-titre dynamique
-        long annul = safeGetLong(stats, "reservationsAnnulees");
-        totalResaCard.setSubtitle(annul > 0 ? annul + " annulées" : "Aucune annulation");
-    }
-
-    private void updateFilter() {
-        if (dataView == null) return;
-
-        dataView.setFilter(r -> {
-            String search = searchField.getValue().trim().toLowerCase();
-            boolean matchSearch = search.isEmpty()
-                    || r.getCodeReservation().toLowerCase().contains(search)
-                    || r.getUtilisateur().getNomComplet().toLowerCase().contains(search);
-
-            boolean matchStatus = statusFilter.getValue() == null
-                    || r.getStatut() == statusFilter.getValue();
-
-            return matchSearch && matchStatus;
-        });
-    }
-
     private void handleConfirm(Reservation r) {
-        ConfirmDialogUtil.show("Confirmer ?", "Valider cette réservation manuellement ?", () -> {
+        ConfirmDialogUtil.show("Confirmer ?", "Valider cette réservation ?", () -> {
             try {
-                reservationService.confirmReservation(r.getId());
+                reservationService.confirmReservation(r.getId(), this.getCurrentUser().getId());
                 showSuccess("Réservation confirmée.");
                 refreshData();
-            } catch (Exception e) {
-                showError(e.getMessage());
-            }
+            } catch (Exception e) { showError(e.getMessage()); }
         });
     }
 
     private void handleCancel(Reservation r) {
-        ConfirmDialogUtil.show("Annuler ?", "Action irréversible. Le client sera notifié.", () -> {
+        ConfirmDialogUtil.show("Annuler ?", "Action irréversible.", () -> {
             try {
-                // L'organisateur annule -> pas de limite de 48h (selon la logique, on passe l'ID user pour audit)
                 reservationService.annulerReservation(r.getId(), getCurrentUser().getId());
                 showSuccess("Réservation annulée.");
                 refreshData();
-            } catch (Exception e) {
-                showError(e.getMessage()); // Ex: Règle 48h si appliquée aussi aux orgas
-            }
+            } catch (Exception e) { showError(e.getMessage()); }
         });
     }
 
@@ -354,20 +314,17 @@ public class EventReservationsView extends VerticalLayout implements BeforeEnter
         Notification.show(msg, 5000, Notification.Position.TOP_CENTER).addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
 
-    // --- Utilitaires Stats ---
+    // Helpers Stats
     private Long safeGetLong(Map<String, Object> map, String key) {
         Object val = map.get(key);
-        if (val instanceof Number) return ((Number) val).longValue();
-        return 0L;
+        return (val instanceof Number) ? ((Number) val).longValue() : 0L;
     }
     private Double safeGetDouble(Map<String, Object> map, String key) {
         Object val = map.get(key);
-        if (val instanceof Number) return ((Number) val).doubleValue();
-        return 0.0;
+        return (val instanceof Number) ? ((Number) val).doubleValue() : 0.0;
     }
     private Integer safeGetInt(Map<String, Object> map, String key) {
         Object val = map.get(key);
-        if (val instanceof Number) return ((Number) val).intValue();
-        return 0;
+        return (val instanceof Number) ? ((Number) val).intValue() : 0;
     }
 }

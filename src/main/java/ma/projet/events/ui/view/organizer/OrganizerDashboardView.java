@@ -55,18 +55,18 @@ public class OrganizerDashboardView extends VerticalLayout {
         setSpacing(true);
         addClassName(LumoUtility.Background.BASE);
 
-        // 1. Récupérer l'organisateur connecté
+        // 1. Organisateur
         User organizer = getCurrentOrganizer();
         if (organizer == null) {
             add(new Span("Erreur : Utilisateur non identifié."));
             return;
         }
 
-        // 2. Récupérer les données
+        // 2. Données
         Map<String, Object> stats = eventService.getOrganizerStatistics(organizer.getId());
         List<Event> recentEvents = eventService.getEventsByOrganisateur(organizer.getId());
 
-        // 3. Construction UI
+        // 3. UI
         add(
                 createHeader(organizer),
                 createKpiSection(stats),
@@ -115,31 +115,29 @@ public class OrganizerDashboardView extends VerticalLayout {
         layout.addClassName(LumoUtility.Gap.MEDIUM);
         layout.addClassName(LumoUtility.Margin.Bottom.LARGE);
 
-        // Utilisation des méthodes safeGet... pour éviter les erreurs de Cast
-
-        // KPI 1 : Revenus
+        // KPI 1 : Revenus (Vert)
         Double revenue = safeGetDouble(stats, "totalRevenue");
         StatCard revenueCard = new StatCard(
                 "Revenu Total",
                 PriceFormatter.format(revenue),
                 VaadinIcon.MONEY,
                 "Chiffre d'affaires généré",
-                "var(--lumo-success-color)"
+                "#10b981" // Vert Émeraude
         );
         styleCard(revenueCard);
 
-        // KPI 2 : Réservations
+        // KPI 2 : Réservations (Bleu Indigo)
         long totalReservations = safeGetLong(stats, "totalReservations");
         StatCard salesCard = new StatCard(
                 "Réservations",
                 String.valueOf(totalReservations),
                 VaadinIcon.TICKET,
                 "Billets vendus au total",
-                "var(--lumo-primary-color)"
+                "#6366f1" // Indigo
         );
         styleCard(salesCard);
 
-        // KPI 3 : Événements Publiés
+        // KPI 3 : Événements Publiés (Violet)
         long published = safeGetLong(stats, "publishedEvents");
         long totalEvents = safeGetLong(stats, "totalEvents");
         StatCard eventsCard = new StatCard(
@@ -147,18 +145,18 @@ public class OrganizerDashboardView extends VerticalLayout {
                 String.valueOf(published),
                 VaadinIcon.CALENDAR_CLOCK,
                 "Sur " + totalEvents + " événements créés",
-                "var(--lumo-contrast-color)"
+                "#8b5cf6" // Violet
         );
         styleCard(eventsCard);
 
-        // KPI 4 : Brouillons
+        // KPI 4 : Brouillons (Orange/Gris)
         long drafts = safeGetLong(stats, "draftEvents");
         StatCard draftCard = new StatCard(
                 "Brouillons",
                 String.valueOf(drafts),
                 VaadinIcon.EDIT,
                 "En attente de publication",
-                drafts > 0 ? "var(--lumo-error-color)" : "var(--lumo-tertiary-text-color)"
+                drafts > 0 ? "#f59e0b" : "#9ca3af" // Orange si >0, sinon Gris
         );
         styleCard(draftCard);
 
@@ -175,7 +173,12 @@ public class OrganizerDashboardView extends VerticalLayout {
         H3 title = new H3("Événements Récents");
         title.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.Bottom.SMALL);
 
+        // Grid moderne avec fond blanc et ombre
+        VerticalLayout gridContainer = new VerticalLayout();
+        gridContainer.addClassNames(LumoUtility.Background.BASE, LumoUtility.BoxShadow.SMALL, LumoUtility.BorderRadius.LARGE, LumoUtility.Padding.SMALL);
+
         Grid<Event> grid = new Grid<>(Event.class, false);
+        grid.addClassName(LumoUtility.Border.NONE);
 
         grid.addColumn(Event::getTitre)
                 .setHeader("Titre")
@@ -196,12 +199,13 @@ public class OrganizerDashboardView extends VerticalLayout {
                 .setHeader("Capacité")
                 .setTextAlign(com.vaadin.flow.component.grid.ColumnTextAlign.END);
 
-        // Tri local simple
+        // Tri local
         events.sort((e1, e2) -> e2.getId().compareTo(e1.getId()));
         grid.setItems(events);
 
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_NO_BORDER);
         grid.setAllRowsVisible(true);
+        gridContainer.add(grid);
 
         if (events.isEmpty()) {
             VerticalLayout empty = new VerticalLayout();
@@ -211,28 +215,21 @@ public class OrganizerDashboardView extends VerticalLayout {
             return new VerticalLayout(title, empty);
         }
 
-        return new VerticalLayout(title, grid);
+        return new VerticalLayout(title, gridContainer);
     }
 
-    // ==========================================
-    // MÉTHODES UTILITAIRES POUR EVITER LES CRASHS
-    // ==========================================
-
+    // Helpers safeGet...
     private Long safeGetLong(Map<String, Object> map, String key) {
         Object val = map.get(key);
         if (val == null) return 0L;
-        if (val instanceof Number) {
-            return ((Number) val).longValue();
-        }
+        if (val instanceof Number) return ((Number) val).longValue();
         return 0L;
     }
 
     private Double safeGetDouble(Map<String, Object> map, String key) {
         Object val = map.get(key);
         if (val == null) return 0.0;
-        if (val instanceof Number) {
-            return ((Number) val).doubleValue();
-        }
+        if (val instanceof Number) return ((Number) val).doubleValue();
         return 0.0;
     }
 }

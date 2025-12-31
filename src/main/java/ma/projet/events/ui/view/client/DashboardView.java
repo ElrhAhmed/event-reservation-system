@@ -30,7 +30,7 @@ import java.util.Map;
 
 @Route(value = "dashboard", layout = UserLayout.class)
 @PageTitle("Tableau de bord | FESTIVENT")
-@RolesAllowed({"CLIENT", "ADMIN", "ORGANIZER"}) // Accessible à tous les connectés, mais principalement Client
+@RolesAllowed({"CLIENT", "ADMIN", "ORGANIZER"})
 public class DashboardView extends VerticalLayout {
 
     private final UserService userService;
@@ -58,7 +58,7 @@ public class DashboardView extends VerticalLayout {
             return;
         }
 
-        // 2. En-tête de bienvenue
+        // 2. En-tête
         add(createHeader(currentUser));
 
         // 3. Cartes de Statistiques
@@ -67,7 +67,7 @@ public class DashboardView extends VerticalLayout {
         // 4. Actions Rapides
         add(createQuickActions());
 
-        // 5. Dernières réservations (Aperçu)
+        // 5. Dernières réservations
         add(createRecentReservationsSection(currentUser.getId()));
     }
 
@@ -83,8 +83,8 @@ public class DashboardView extends VerticalLayout {
         H2 title = new H2("Bonjour, " + user.getPrenom() + " !");
         title.addClassNames(LumoUtility.Margin.Bottom.NONE);
 
-        Span subtitle = new Span("Voici un aperçu de vos activités récentes.");
-        subtitle.addClassName(LumoUtility.TextColor.SECONDARY);
+        Span subtitle = new Span("Ravi de vous revoir sur FestiVent.");
+        subtitle.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.MEDIUM);
 
         VerticalLayout header = new VerticalLayout(title, subtitle);
         header.setPadding(false);
@@ -93,41 +93,40 @@ public class DashboardView extends VerticalLayout {
     }
 
     private FlexLayout createStatsSection(Long userId) {
-        // Récupération des stats via UserService
         Map<String, Object> stats = userService.getUserStatistics(userId);
 
         FlexLayout layout = new FlexLayout();
         layout.setWidthFull();
         layout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
-        layout.addClassName(LumoUtility.Gap.MEDIUM);// Espacement entre les cartes
+        layout.addClassName(LumoUtility.Gap.MEDIUM);
 
-        // Carte 1 : Total Réservations
+        // Carte 1 : Total Réservations (Bleu)
         StatCard totalResa = new StatCard(
                 "Réservations",
                 String.valueOf(stats.get("totalReservations")),
                 VaadinIcon.TICKET,
                 stats.get("reservationsConfirmees") + " confirmées",
-                "var(--lumo-primary-color)"
+                "#6366f1" // Indigo
         );
         styleCard(totalResa);
 
-        // Carte 2 : Dépenses
+        // Carte 2 : Dépenses (Vert)
         StatCard depenses = new StatCard(
                 "Total Dépensé",
                 stats.get("montantTotalDepense") + " DH",
                 VaadinIcon.WALLET,
-                "Sur toutes vos commandes",
-                "var(--lumo-success-color)"
+                "Total cumulé",
+                "#10b981" // Vert
         );
         styleCard(depenses);
 
-        // Carte 3 : Places (Calculé à partir des stats)
+        // Carte 3 : Places (Orange)
         StatCard places = new StatCard(
                 "Billets achetés",
                 String.valueOf(stats.get("totalPlacesReservees")),
                 VaadinIcon.GROUP,
-                "Pour vous et vos amis",
-                "var(--lumo-contrast-color)"
+                "Sièges réservés",
+                "#f59e0b" // Orange
         );
         styleCard(places);
 
@@ -135,26 +134,23 @@ public class DashboardView extends VerticalLayout {
         return layout;
     }
 
-    // Helper pour assurer le responsive des cartes
     private void styleCard(StatCard card) {
-        card.setMinWidth("250px");
+        card.setMinWidth("260px");
         card.getStyle().set("flex", "1");
     }
 
     private VerticalLayout createQuickActions() {
         H3 title = new H3("Accès Rapide");
-        title.addClassNames(LumoUtility.FontSize.MEDIUM, LumoUtility.Margin.Top.LARGE);
+        title.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.Top.LARGE);
 
         FlexLayout actions = new FlexLayout();
         actions.setWidthFull();
         actions.setFlexWrap(FlexLayout.FlexWrap.WRAP);
-        actions.addClassName(LumoUtility.Gap.SMALL); // Responsive
+        actions.addClassName(LumoUtility.Gap.MEDIUM);
 
-        Button browseBtn = createActionButton("Parcourir les événements", VaadinIcon.SEARCH, ButtonVariant.LUMO_PRIMARY, navigationManager::goToEvents);
-        Button myResaBtn = createActionButton("Mes Réservations", VaadinIcon.LIST, ButtonVariant.LUMO_TERTIARY, navigationManager::goToClientReservations);
-        Button profileBtn = createActionButton("Mon Profil", VaadinIcon.USER, ButtonVariant.LUMO_TERTIARY, navigationManager::goToProfile);
-
-        actions.add(browseBtn, myResaBtn, profileBtn);
+        actions.add(createActionButton("Parcourir les événements", VaadinIcon.SEARCH, ButtonVariant.LUMO_PRIMARY, navigationManager::goToEvents));
+        actions.add(createActionButton("Mes Réservations", VaadinIcon.LIST, ButtonVariant.LUMO_CONTRAST, navigationManager::goToClientReservations));
+        actions.add(createActionButton("Mon Profil", VaadinIcon.USER, ButtonVariant.LUMO_CONTRAST, navigationManager::goToProfile));
 
         return new VerticalLayout(title, actions);
     }
@@ -162,13 +158,14 @@ public class DashboardView extends VerticalLayout {
     private Button createActionButton(String label, VaadinIcon icon, ButtonVariant variant, Runnable action) {
         Button btn = new Button(label, new Icon(icon));
         btn.addThemeVariants(variant);
+        btn.setHeight("50px");
         btn.addClickListener(e -> action.run());
         return btn;
     }
 
     private VerticalLayout createRecentReservationsSection(Long userId) {
-        H3 title = new H3("Dernières activités");
-        title.addClassNames(LumoUtility.FontSize.MEDIUM, LumoUtility.Margin.Top.LARGE);
+        H3 title = new H3("Activité Récente");
+        title.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.Top.LARGE);
 
         VerticalLayout list = new VerticalLayout();
         list.setPadding(false);
@@ -177,18 +174,15 @@ public class DashboardView extends VerticalLayout {
         List<Reservation> reservations = reservationService.findUserReservations(userId);
 
         if (reservations.isEmpty()) {
-            Span empty = new Span("Vous n'avez effectué aucune réservation pour le moment.");
+            Span empty = new Span("Aucune activité récente.");
             empty.addClassName(LumoUtility.TextColor.SECONDARY);
             list.add(empty);
         } else {
-            // Afficher les 3 plus récentes (nécessite un tri inverse, supposons que findUserReservations renvoie par ID asc)
-            // On fait un petit tri manuel ici pour être sûr
             reservations.stream()
                     .sorted((r1, r2) -> r2.getDateReservation().compareTo(r1.getDateReservation()))
                     .limit(3)
                     .forEach(r -> list.add(createMiniReservationItem(r)));
         }
-
         return new VerticalLayout(title, list);
     }
 
@@ -197,24 +191,33 @@ public class DashboardView extends VerticalLayout {
         row.setWidthFull();
         row.setAlignItems(Alignment.CENTER);
         row.setJustifyContentMode(JustifyContentMode.BETWEEN);
-        row.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.MEDIUM, LumoUtility.BorderRadius.MEDIUM);
+        row.addClassNames(LumoUtility.Background.BASE, LumoUtility.BoxShadow.XSMALL, LumoUtility.Padding.MEDIUM, LumoUtility.BorderRadius.MEDIUM);
+        row.getStyle().set("border", "1px solid var(--lumo-contrast-5pct)");
+
+        HorizontalLayout left = new HorizontalLayout();
+        left.setAlignItems(Alignment.CENTER);
+
+        Icon icon = VaadinIcon.TICKET.create();
+        icon.addClassName(LumoUtility.TextColor.PRIMARY);
+        icon.setSize("20px");
 
         VerticalLayout info = new VerticalLayout();
         info.setPadding(false);
         info.setSpacing(false);
 
         Span eventName = new Span(r.getEvenement().getTitre());
-        eventName.addClassName(LumoUtility.FontWeight.BOLD);
+        eventName.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
 
-        Span date = new Span(r.getDateReservation().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        Span date = new Span(r.getDateReservation().format(DateTimeFormatter.ofPattern("dd MMM yyyy")));
         date.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
 
         info.add(eventName, date);
+        left.add(icon, info);
 
         Span status = new Span(r.getStatut().getLabel());
-        status.getElement().getThemeList().add("badge " + (r.getStatut() == ReservationStatus.CONFIRMEE ? "success" : "contrast"));
+        status.getElement().getThemeList().add("badge pill " + (r.getStatut() == ReservationStatus.CONFIRMEE ? "success" : "contrast"));
 
-        row.add(info, status);
+        row.add(left, status);
         return row;
     }
 }

@@ -49,14 +49,14 @@ public class SecurityConfig extends VaadinWebSecurity {
 
         setLoginView(http, LoginView.class);
 
-        // CORRECTION : Autoriser le Logout via GET
+
         http.logout(logout -> logout
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
                 .logoutSuccessUrl("/")
                 .permitAll()
         );
 
-        // Gestion personnalisée de la redirection après login
+        // Gestion de la redirection après login
         http.formLogin(form -> form
                 .successHandler(new AuthenticationSuccessHandler() {
                     @Override

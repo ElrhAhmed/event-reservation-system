@@ -1,5 +1,6 @@
 package ma.projet.events.ui.layout;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -32,21 +33,20 @@ public class AdminLayout extends AppLayout implements RouterLayout {
         createHeader();
         createDrawer();
 
-        addClassName(LumoUtility.Height.FULL);
+        addClassName(LumoUtility.Background.CONTRAST_5);
     }
 
     private void createHeader() {
         DrawerToggle toggle = new DrawerToggle();
-        toggle.addClassName(LumoUtility.Margin.End.MEDIUM);
+        toggle.addClassName(LumoUtility.TextColor.SECONDARY);
 
         H1 logo = new H1("FESTIVENT");
-        logo.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.NONE);
+        logo.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.NONE, LumoUtility.TextColor.PRIMARY);
 
         // Badge ADMIN
-        Span badge = new Span("ADMINISTRATION");
-        badge.getElement().getThemeList().add("badge error");
+        Span badge = new Span("ADMIN");
+        badge.getElement().getThemeList().add("badge error small");
         badge.addClassName(LumoUtility.Margin.Start.SMALL);
-        badge.addClassName(LumoUtility.FontSize.XSMALL);
 
         HorizontalLayout branding = new HorizontalLayout(logo, badge);
         branding.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -59,12 +59,11 @@ public class AdminLayout extends AppLayout implements RouterLayout {
 
         Avatar avatar = new Avatar(username);
         avatar.addThemeVariants(com.vaadin.flow.component.avatar.AvatarVariant.LUMO_XSMALL);
+        avatar.getStyle().set("background-color", "var(--lumo-error-color)"); // Rouge pour Admin
+        avatar.getStyle().set("color", "white");
 
         HorizontalLayout userArea = new HorizontalLayout(new Span(username), avatar);
         userArea.setAlignItems(FlexComponent.Alignment.CENTER);
-
-
-        // ✅ AJOUT : Rendre la zone avatar cliquable vers le profil
         userArea.getStyle().set("cursor", "pointer");
         userArea.addClickListener(e -> navigationManager.goToProfile());
 
@@ -72,8 +71,9 @@ public class AdminLayout extends AppLayout implements RouterLayout {
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         header.setWidthFull();
         header.expand(branding);
+
         header.addClassNames(
-                LumoUtility.Padding.Vertical.XSMALL,
+                LumoUtility.Padding.Vertical.SMALL,
                 LumoUtility.Padding.Horizontal.MEDIUM,
                 LumoUtility.BoxShadow.SMALL,
                 LumoUtility.Background.BASE
@@ -83,51 +83,37 @@ public class AdminLayout extends AppLayout implements RouterLayout {
     }
 
     private void createDrawer() {
-        // Section Principale
         H2 menuTitle = new H2("Gouvernance");
-        menuTitle.addClassNames(
-                LumoUtility.FontSize.XSMALL,
-                LumoUtility.Padding.Horizontal.LARGE,
-                LumoUtility.Padding.Top.MEDIUM,
-                LumoUtility.TextColor.TERTIARY,
-                LumoUtility.TextTransform.UPPERCASE,
-                LumoUtility.FontWeight.BOLD
-        );
+        menuTitle.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.Padding.Horizontal.LARGE, LumoUtility.Padding.Top.MEDIUM, LumoUtility.TextColor.TERTIARY, LumoUtility.TextTransform.UPPERCASE, LumoUtility.FontWeight.BOLD);
 
         VerticalLayout navList = new VerticalLayout();
         navList.setPadding(false);
         navList.setSpacing(false);
 
-        // --- MENU ITEMS ---
+        // Les appels directs add(...) fonctionnent car Component est compatible
         navList.add(createNavItem("Vue Globale", VaadinIcon.DASHBOARD, navigationManager::goToAdminDashboard));
         navList.add(createNavItem("Utilisateurs", VaadinIcon.USERS, navigationManager::goToAdminUsers));
         navList.add(createNavItem("Événements", VaadinIcon.ARCHIVE, navigationManager::goToAdminEvents));
         navList.add(createNavItem("Réservations", VaadinIcon.TICKET, navigationManager::goToAdminReservations));
 
-        // Spacer pour pousser le footer en bas
         VerticalLayout spacer = new VerticalLayout();
         spacer.setHeight("2rem");
 
-        // ✅ AJOUT : Section Compte (Pour la cohérence avec User/Organizer Layouts)
         H2 accountTitle = new H2("Compte");
-        accountTitle.addClassNames(
-                LumoUtility.FontSize.XSMALL,
-                LumoUtility.Padding.Horizontal.LARGE,
-                LumoUtility.TextColor.TERTIARY,
-                LumoUtility.TextTransform.UPPERCASE
-        );
+        accountTitle.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.Padding.Horizontal.LARGE, LumoUtility.TextColor.TERTIARY, LumoUtility.TextTransform.UPPERCASE);
 
-        // ✅ AJOUT : Bouton Mon Profil
-        Button profileBtn = createNavItem("Mon Profil", VaadinIcon.USER, navigationManager::goToProfile);
+        // CORRECTION ICI : Type Component au lieu de Button
+        Component profileBtn = createNavItem("Mon Profil", VaadinIcon.USER, navigationManager::goToProfile);
 
-        // Bouton Déconnexion
-        Button logoutBtn = createNavItem("Déconnexion", VaadinIcon.POWER_OFF, securityService::logout);
-        logoutBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        // CORRECTION ICI : Type Component + Style manuel pour le rouge
+        Component logoutBtn = createNavItem("Déconnexion", VaadinIcon.POWER_OFF, securityService::logout);
+        logoutBtn.getElement().getStyle().set("color", "var(--lumo-error-text-color)"); // Rouge
+        logoutBtn.getElement().getStyle().set("font-weight", "bold");
 
         VerticalLayout drawerContent = new VerticalLayout(
                 menuTitle, navList,
                 spacer,
-                accountTitle, profileBtn, logoutBtn // Ajout des éléments du footer
+                accountTitle, profileBtn, logoutBtn
         );
         drawerContent.setSizeFull();
         drawerContent.setPadding(false);
@@ -136,18 +122,41 @@ public class AdminLayout extends AppLayout implements RouterLayout {
         addToDrawer(new Scroller(drawerContent));
     }
 
-    private Button createNavItem(String label, VaadinIcon icon, Runnable action) {
-        Button btn = new Button(label, new Icon(icon));
-        btn.addClickListener(e -> action.run());
-        btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        btn.setWidthFull();
-        btn.setHeight("2.5rem");
-        btn.addClassNames(
-                LumoUtility.JustifyContent.START,
-                LumoUtility.Padding.Start.LARGE,
-                LumoUtility.FontSize.SMALL,
-                LumoUtility.TextColor.SECONDARY
-        );
-        return btn;
+    // Notez le type de retour : Component au lieu de Button
+    private Component createNavItem(String label, VaadinIcon icon, Runnable action) {
+        // 1. Icône
+        Icon i = icon.create();
+        i.setSize("20px");
+        i.getStyle().set("color", "var(--lumo-primary-color)");
+        i.getStyle().set("min-width", "20px"); // Empêche l'écrasement
+        i.getStyle().set("margin-right", "16px"); // Espace propre entre icône et texte
+
+        // 2. Texte
+        Span text = new Span(label);
+        text.addClassNames(LumoUtility.FontSize.MEDIUM, LumoUtility.FontWeight.MEDIUM);
+        text.getStyle().set("color", "var(--lumo-body-text-color)");
+
+        // 3. Conteneur (Le "Bouton")
+        HorizontalLayout item = new HorizontalLayout(i, text);
+        item.setWidthFull();
+        item.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        // --- LE SECRET DE L'ALIGNEMENT ---
+        // On définit le padding ici. "12px" haut/bas, "24px" gauche/droite
+        item.getStyle().set("padding", "12px 24px");
+        item.getStyle().set("cursor", "pointer");
+        item.getStyle().set("border-radius", "0 24px 24px 0"); // Arrondi à droite
+        item.getStyle().set("transition", "background-color 0.2s"); // Animation douce
+
+        // 4. Interaction (Click & Hover)
+        item.addClickListener(e -> action.run());
+
+        // Effet de survol simple en Java
+        item.getElement().addEventListener("mouseenter", e ->
+                item.getStyle().set("background-color", "var(--lumo-contrast-5pct)"));
+        item.getElement().addEventListener("mouseleave", e ->
+                item.getStyle().remove("background-color"));
+
+        return item;
     }
 }

@@ -58,13 +58,25 @@ public class UserManagementView extends VerticalLayout {
         setSpacing(true);
         addClassName(LumoUtility.Background.BASE);
 
-        add(createHeader(), createToolbar(), createGrid());
+        add(createHeader(), createToolbar());
+
+        // Grid Wrapper
+        VerticalLayout gridWrapper = new VerticalLayout();
+        gridWrapper.addClassNames(LumoUtility.Background.BASE, LumoUtility.BoxShadow.SMALL, LumoUtility.BorderRadius.LARGE, LumoUtility.Overflow.HIDDEN);
+        gridWrapper.setPadding(false);
+        gridWrapper.setSizeFull();
+
+        grid = createGrid();
+        gridWrapper.add(grid);
+
+        add(gridWrapper);
+
         refreshData();
     }
 
     private Component createHeader() {
-        H2 title = new H2("Gestion des Utilisateurs");
-        title.addClassName(LumoUtility.Margin.NONE);
+        H2 title = new H2("Annuaire Utilisateurs");
+        title.addClassNames(LumoUtility.Margin.NONE, LumoUtility.FontSize.XLARGE);
         return title;
     }
 
@@ -73,7 +85,7 @@ public class UserManagementView extends VerticalLayout {
         searchField.setPlaceholder("Rechercher (Nom, Email)...");
         searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
         searchField.setValueChangeMode(ValueChangeMode.LAZY);
-        searchField.setWidth("300px");
+        searchField.addClassName(LumoUtility.Flex.GROW);
         searchField.addValueChangeListener(e -> updateFilter());
 
         roleFilter = new ComboBox<>();
@@ -81,12 +93,14 @@ public class UserManagementView extends VerticalLayout {
         roleFilter.setItems(Role.values());
         roleFilter.setItemLabelGenerator(Role::getLabel);
         roleFilter.setClearButtonVisible(true);
+        roleFilter.setWidth("180px");
         roleFilter.addValueChangeListener(e -> updateFilter());
 
         statusFilter = new ComboBox<>();
         statusFilter.setPlaceholder("Statut");
         statusFilter.setItems("Actif", "Inactif");
         statusFilter.setClearButtonVisible(true);
+        statusFilter.setWidth("150px");
         statusFilter.addValueChangeListener(e -> updateFilter());
 
         Button refreshBtn = new Button(new Icon(VaadinIcon.REFRESH), e -> refreshData());
@@ -94,26 +108,17 @@ public class UserManagementView extends VerticalLayout {
 
         HorizontalLayout toolbar = new HorizontalLayout(searchField, roleFilter, statusFilter, refreshBtn);
         toolbar.setWidthFull();
-        toolbar.addClassName(LumoUtility.FlexWrap.WRAP);
+        toolbar.addClassName(LumoUtility.Margin.Bottom.SMALL);
         return toolbar;
     }
 
-    private Component createGrid() {
-        grid = new Grid<>(User.class, false);
+    private Grid<User> createGrid() {
+        Grid<User> grid = new Grid<>(User.class, false);
         grid.setSizeFull();
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_NO_BORDER);
 
-        // Colonnes Données
-        grid.addColumn(User::getNomComplet)
-                .setHeader("Utilisateur")
-                .setSortable(true)
-                .setAutoWidth(true)
-                .setFlexGrow(1);
-
-        grid.addColumn(User::getEmail)
-                .setHeader("Email")
-                .setSortable(true)
-                .setAutoWidth(true);
+        grid.addColumn(User::getNomComplet).setHeader("Utilisateur").setSortable(true).setAutoWidth(true).setFlexGrow(1);
+        grid.addColumn(User::getEmail).setHeader("Email").setSortable(true).setAutoWidth(true);
 
         grid.addColumn(new ComponentRenderer<>(user -> {
             Span badge = new Span(user.getRole().getLabel());
@@ -126,10 +131,7 @@ public class UserManagementView extends VerticalLayout {
             return badge;
         })).setHeader("Rôle").setSortable(true).setAutoWidth(true);
 
-        grid.addColumn(u -> DateFormatter.format(u.getDateInscription()))
-                .setHeader("Inscription")
-                .setSortable(true)
-                .setAutoWidth(true);
+        grid.addColumn(u -> DateFormatter.format(u.getDateInscription())).setHeader("Inscription").setSortable(true).setAutoWidth(true);
 
         grid.addColumn(new ComponentRenderer<>(user -> {
             boolean active = user.isActif();
@@ -138,7 +140,6 @@ public class UserManagementView extends VerticalLayout {
             return badge;
         })).setHeader("Statut").setSortable(true).setAutoWidth(true);
 
-        // Colonne Actions
         grid.addComponentColumn(this::createActions).setHeader("Actions").setFrozenToEnd(true);
 
         return grid;
@@ -147,30 +148,23 @@ public class UserManagementView extends VerticalLayout {
     private Component createActions(User user) {
         HorizontalLayout actions = new HorizontalLayout();
 
-        // Ne pas permettre d'actions sur soi-même pour éviter de se bloquer
-        if (isCurrentUser(user)) {
-            Span info = new Span("(Vous)");
-            info.addClassName(LumoUtility.TextColor.SECONDARY);
-            return info;
-        }
+        if (isCurrentUser(user)) return new Span("(Vous)");
 
-        // Bouton Changer Rôle
         Button roleBtn = new Button(new Icon(VaadinIcon.USER_CARD));
         roleBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        roleBtn.setTooltipText("Changer le rôle");
+        roleBtn.setTooltipText("Changer rôle");
         roleBtn.addClickListener(e -> openRoleDialog(user));
 
-        // Bouton Activer / Désactiver (Toggle)
         Button toggleStatusBtn;
         if (user.isActif()) {
             toggleStatusBtn = new Button(new Icon(VaadinIcon.BAN));
             toggleStatusBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_ICON);
-            toggleStatusBtn.setTooltipText("Désactiver le compte");
+            toggleStatusBtn.setTooltipText("Désactiver");
             toggleStatusBtn.addClickListener(e -> handleDeactivation(user));
         } else {
             toggleStatusBtn = new Button(new Icon(VaadinIcon.CHECK_CIRCLE));
             toggleStatusBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_ICON);
-            toggleStatusBtn.setTooltipText("Réactiver le compte");
+            toggleStatusBtn.setTooltipText("Activer");
             toggleStatusBtn.addClickListener(e -> handleActivation(user));
         }
 
@@ -178,10 +172,7 @@ public class UserManagementView extends VerticalLayout {
         return actions;
     }
 
-    /* =========================
-       LOGIQUE MÉTIER
-       ========================= */
-
+    // --- LOGIQUE ---
     private void refreshData() {
         List<User> users = userService.getAllUsers();
         dataView = grid.setItems(users);
@@ -190,30 +181,21 @@ public class UserManagementView extends VerticalLayout {
 
     private void updateFilter() {
         if (dataView == null) return;
-
         dataView.setFilter(user -> {
             String search = searchField.getValue().trim().toLowerCase();
-            boolean matchSearch = search.isEmpty()
-                    || user.getNomComplet().toLowerCase().contains(search)
-                    || user.getEmail().toLowerCase().contains(search);
-
-            boolean matchRole = roleFilter.getValue() == null
-                    || user.getRole() == roleFilter.getValue();
-
-            boolean matchStatus = statusFilter.getValue() == null
-                    || (statusFilter.getValue().equals("Actif") && user.isActif())
-                    || (statusFilter.getValue().equals("Inactif") && !user.isActif());
-
+            boolean matchSearch = search.isEmpty() || user.getNomComplet().toLowerCase().contains(search) || user.getEmail().toLowerCase().contains(search);
+            boolean matchRole = roleFilter.getValue() == null || user.getRole() == roleFilter.getValue();
+            boolean matchStatus = statusFilter.getValue() == null ||
+                    (statusFilter.getValue().equals("Actif") && user.isActif()) ||
+                    (statusFilter.getValue().equals("Inactif") && !user.isActif());
             return matchSearch && matchRole && matchStatus;
         });
     }
 
     private void openRoleDialog(User user) {
         Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Changer le rôle de " + user.getPrenom());
-
-        ComboBox<Role> roleCombo = new ComboBox<>("Nouveau rôle");
-        roleCombo.setItems(Role.values());
+        dialog.setHeaderTitle("Rôle : " + user.getNomComplet());
+        ComboBox<Role> roleCombo = new ComboBox<>("Nouveau rôle", Role.values());
         roleCombo.setItemLabelGenerator(Role::getLabel);
         roleCombo.setValue(user.getRole());
 
@@ -225,51 +207,32 @@ public class UserManagementView extends VerticalLayout {
                     refreshData();
                     dialog.close();
                 }
-            } catch (Exception ex) {
-                showError(ex.getMessage());
-            }
+            } catch (Exception ex) { showError(ex.getMessage()); }
         });
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        Button cancel = new Button("Annuler", e -> dialog.close());
-
         dialog.add(roleCombo);
-        dialog.getFooter().add(cancel, save);
+        dialog.getFooter().add(new Button("Annuler", e->dialog.close()), save);
         dialog.open();
     }
 
     private void handleDeactivation(User user) {
-        ConfirmDialogUtil.show(
-                "Désactiver le compte ?",
-                "L'utilisateur " + user.getNomComplet() + " ne pourra plus se connecter.",
-                () -> {
-                    try {
-                        User admin = getCurrentUser();
-                        userService.deactivateAccount(user.getId(), admin.getId());
-                        showSuccess("Compte désactivé.");
-                        refreshData();
-                    } catch (Exception e) {
-                        showError(e.getMessage());
-                    }
-                }
-        );
+        ConfirmDialogUtil.show("Désactiver ?", "L'utilisateur ne pourra plus se connecter.", () -> {
+            try {
+                userService.deactivateAccount(user.getId(), getCurrentUser().getId());
+                showSuccess("Désactivé.");
+                refreshData();
+            } catch (Exception e) { showError(e.getMessage()); }
+        });
     }
 
     private void handleActivation(User user) {
-        ConfirmDialogUtil.show(
-                "Réactiver le compte ?",
-                "L'utilisateur " + user.getNomComplet() + " retrouvera l'accès à son compte.",
-                () -> {
-                    try {
-                        User admin = getCurrentUser();
-                        userService.activateAccount(user.getId(), admin.getId());
-                        showSuccess("Compte réactivé.");
-                        refreshData();
-                    } catch (Exception e) {
-                        showError(e.getMessage());
-                    }
-                }
-        );
+        ConfirmDialogUtil.show("Activer ?", "L'accès sera rétabli.", () -> {
+            try {
+                userService.activateAccount(user.getId(), getCurrentUser().getId());
+                showSuccess("Activé.");
+                refreshData();
+            } catch (Exception e) { showError(e.getMessage()); }
+        });
     }
 
     private boolean isCurrentUser(User user) {

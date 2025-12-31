@@ -234,7 +234,7 @@ public class OrganizerAllReservationsView extends VerticalLayout {
     private void handleConfirm(Reservation r) {
         ConfirmDialogUtil.show("Confirmer ?", "Valider cette réservation ?", () -> {
             try {
-                reservationService.confirmReservation(r.getId());
+                reservationService.confirmReservation(r.getId(), this.getCurrentUser().getId());
                 Notification.show("Confirmé").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 refreshData();
             } catch (Exception e) { Notification.show(e.getMessage()); }

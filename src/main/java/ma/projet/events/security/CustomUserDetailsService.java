@@ -25,7 +25,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'email : " + email));
 
         // On transforme le rôle (ex: ADMIN) en autorité Spring (ROLE_ADMIN)
-        // Spring Security attend souvent le préfixe "ROLE_" par convention.
         var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
 
         return new org.springframework.security.core.userdetails.User(

@@ -71,12 +71,18 @@ public class MyEventsView extends VerticalLayout {
         addClassName(LumoUtility.Background.BASE);
 
         add(createHeader(), createToolbar());
+
+        // Grid Container pour l'ombre
+        Div gridWrapper = new Div();
+        gridWrapper.addClassNames(LumoUtility.Background.BASE, LumoUtility.BoxShadow.SMALL, LumoUtility.BorderRadius.LARGE, LumoUtility.Overflow.HIDDEN);
+        gridWrapper.setSizeFull();
+
         configureGrid();
-        add(grid);
+        gridWrapper.add(grid);
+
+        add(gridWrapper);
         refreshGrid();
     }
-
-    // ... (createHeader et createToolbar restent inchangés) ...
 
     private HorizontalLayout createHeader() {
         H2 title = new H2("Gestion des Événements");
@@ -99,30 +105,43 @@ public class MyEventsView extends VerticalLayout {
         searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
         searchField.setValueChangeMode(ValueChangeMode.LAZY);
         searchField.addValueChangeListener(e -> updateList());
+        searchField.addClassName(LumoUtility.Flex.GROW);
 
         statusFilter = new ComboBox<>();
-        statusFilter.setPlaceholder("Filtrer par statut");
+        statusFilter.setPlaceholder("Statut");
         statusFilter.setItems(EventStatus.values());
         statusFilter.setItemLabelGenerator(EventStatus::getLabel);
         statusFilter.setClearButtonVisible(true);
         statusFilter.addValueChangeListener(e -> updateList());
+        statusFilter.setWidth("200px");
 
         HorizontalLayout toolbar = new HorizontalLayout(searchField, statusFilter);
         toolbar.setWidthFull();
+        toolbar.addClassName(LumoUtility.Margin.Bottom.SMALL);
         return toolbar;
     }
 
     private void configureGrid() {
         grid = new Grid<>(Event.class, false);
         grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT);
+        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_NO_BORDER);
 
         grid.addColumn(Event::getTitre).setHeader("Titre").setSortable(true).setAutoWidth(true).setFlexGrow(1);
-        grid.addColumn(e -> e.getCategorie().getLabel()).setHeader("Catégorie").setSortable(true).setAutoWidth(true);
-        grid.addColumn(e -> DateFormatter.format(e.getDateDebut())).setHeader("Date").setSortable(true).setAutoWidth(true);
-        grid.addColumn(new ComponentRenderer<>(e -> new StatusBadge(e.getStatut().getLabel(), e.getStatut().getColor()))).setHeader("Statut").setAutoWidth(true);
-        grid.addColumn(new ComponentRenderer<>(this::createProgressComponent)).setHeader("Remplissage").setAutoWidth(true).setFlexGrow(1);
-        grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setAutoWidth(true).setFrozenToEnd(true);
+
+        grid.addColumn(e -> e.getCategorie().getLabel())
+                .setHeader("Catégorie").setSortable(true).setAutoWidth(true);
+
+        grid.addColumn(e -> DateFormatter.format(e.getDateDebut()))
+                .setHeader("Date").setSortable(true).setAutoWidth(true);
+
+        grid.addColumn(new ComponentRenderer<>(e -> new StatusBadge(e.getStatut().getLabel(), e.getStatut().getColor())))
+                .setHeader("Statut").setAutoWidth(true);
+
+        grid.addColumn(new ComponentRenderer<>(this::createProgressComponent))
+                .setHeader("Remplissage").setAutoWidth(true).setFlexGrow(1);
+
+        grid.addComponentColumn(this::createActionButtons)
+                .setHeader("Actions").setAutoWidth(true).setFrozenToEnd(true);
     }
 
     private Component createProgressComponent(Event event) {
@@ -134,10 +153,17 @@ public class MyEventsView extends VerticalLayout {
 
         ProgressBar progressBar = new ProgressBar();
         progressBar.setValue(ratio);
-        if (ratio >= 1.0) progressBar.addThemeVariants(com.vaadin.flow.component.progressbar.ProgressBarVariant.LUMO_ERROR);
-        else if (ratio <= 0.8) progressBar.addThemeVariants(com.vaadin.flow.component.progressbar.ProgressBarVariant.LUMO_SUCCESS);
 
-        progressBar.setHeight("8px");
+        // Couleur dynamique
+        if (ratio >= 1.0) {
+            progressBar.addThemeVariants(com.vaadin.flow.component.progressbar.ProgressBarVariant.LUMO_ERROR); // Rouge si plein
+        } else if (ratio > 0.7) {
+            progressBar.addThemeVariants(com.vaadin.flow.component.progressbar.ProgressBarVariant.LUMO_CONTRAST); // Gris si presque plein
+        } else {
+            progressBar.addThemeVariants(com.vaadin.flow.component.progressbar.ProgressBarVariant.LUMO_SUCCESS); // Vert sinon
+        }
+
+        progressBar.setHeight("6px"); // Plus fin
         Span text = new Span(reserved + " / " + total);
         text.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
 
@@ -148,68 +174,53 @@ public class MyEventsView extends VerticalLayout {
         return layout;
     }
 
-    // --- MODIFICATION ICI : ACTIONS ---
     private Component createActionButtons(Event event) {
         HorizontalLayout actions = new HorizontalLayout();
 
-        // 1. BOUTON APERÇU (Modale)
-        Button viewBtn = new Button(new Icon(VaadinIcon.EYE));
-        viewBtn.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
-        viewBtn.setTooltipText("Aperçu rapide");
+        // Helper pour créer des boutons icônes propres
+        Button viewBtn = createIconBtn(VaadinIcon.EYE, "Aperçu", ButtonVariant.LUMO_TERTIARY);
         viewBtn.addClickListener(e -> showEventPreview(event));
 
-        // 2. ✅ NOUVEAU BOUTON : PARTICIPANTS
-        Button participantsBtn = new Button(new Icon(VaadinIcon.GROUP)); // Icône "Groupe"
-        participantsBtn.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
-        participantsBtn.getStyle().set("color", "var(--lumo-primary-text-color)"); // Couleur bleue pour le distinguer
-        participantsBtn.setTooltipText("Gérer les participants / réservations");
+        Button participantsBtn = createIconBtn(VaadinIcon.GROUP, "Gérer les participants", ButtonVariant.LUMO_TERTIARY);
+        participantsBtn.getStyle().set("color", "var(--lumo-primary-color)");
         participantsBtn.addClickListener(e -> navigationManager.goToEventReservations(event.getId()));
 
-        // 3. BOUTON EDITER
-        Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
-        editBtn.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
-        editBtn.setTooltipText("Modifier");
+        Button editBtn = createIconBtn(VaadinIcon.EDIT, "Modifier", ButtonVariant.LUMO_TERTIARY);
         editBtn.setVisible(event.isModifiable());
         editBtn.addClickListener(e -> navigationManager.goToEditEvent(event.getId()));
 
-        // 4. BOUTON PUBLIER (Si Brouillon)
-        Button publishBtn = new Button(new Icon(VaadinIcon.UPLOAD));
-        publishBtn.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SUCCESS);
-        publishBtn.setTooltipText("Publier");
+        Button publishBtn = createIconBtn(VaadinIcon.UPLOAD, "Publier", ButtonVariant.LUMO_SUCCESS);
         publishBtn.setVisible(event.getStatut() == EventStatus.BROUILLON);
         publishBtn.addClickListener(e -> handlePublish(event));
 
-        // 5. BOUTON ANNULER (Si Publié)
-        Button cancelBtn = new Button(new Icon(VaadinIcon.BAN));
-        cancelBtn.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_ERROR);
-        cancelBtn.setTooltipText("Annuler l'événement");
+        Button cancelBtn = createIconBtn(VaadinIcon.BAN, "Annuler", ButtonVariant.LUMO_ERROR);
         cancelBtn.setVisible(event.getStatut() == EventStatus.PUBLIE);
         cancelBtn.addClickListener(e -> handleCancel(event));
 
-        // 6. BOUTON SUPPRIMER (Si possible)
-        Button deleteBtn = new Button(new Icon(VaadinIcon.TRASH));
-        deleteBtn.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_ERROR);
-        boolean canDelete = event.getStatut() == EventStatus.BROUILLON;
-        deleteBtn.setVisible(canDelete);
+        Button deleteBtn = createIconBtn(VaadinIcon.TRASH, "Supprimer", ButtonVariant.LUMO_ERROR);
+        deleteBtn.setVisible(event.getStatut() == EventStatus.BROUILLON);
         deleteBtn.addClickListener(e -> handleDelete(event));
 
-        // Ajout de tous les boutons
         actions.add(viewBtn, participantsBtn, editBtn, publishBtn, cancelBtn, deleteBtn);
         return actions;
     }
 
-    // --- NOUVELLE MÉTHODE : MODALE APERÇU ---
+    private Button createIconBtn(VaadinIcon icon, String tooltip, ButtonVariant variant) {
+        Button btn = new Button(icon.create());
+        btn.addThemeVariants(ButtonVariant.LUMO_ICON, variant);
+        btn.setTooltipText(tooltip);
+        return btn;
+    }
+
     private void showEventPreview(Event event) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Aperçu : " + event.getTitre());
         dialog.setWidth("600px");
-        dialog.setMaxWidth("90vw");
 
         VerticalLayout content = new VerticalLayout();
         content.setSpacing(true);
         content.setPadding(false);
 
-        // 1. Image
         if (event.getImageUrl() != null && !event.getImageUrl().isBlank()) {
             Image image = new Image(event.getImageUrl(), "Cover");
             image.setWidthFull();
@@ -219,9 +230,9 @@ public class MyEventsView extends VerticalLayout {
             content.add(image);
         }
 
-        // 2. Infos Clés (Grille 2 colonnes)
         HorizontalLayout detailsRow = new HorizontalLayout();
         detailsRow.setWidthFull();
+        detailsRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
         VerticalLayout leftInfo = new VerticalLayout(
                 createDetailItem(VaadinIcon.CALENDAR, DateFormatter.format(event.getDateDebut())),
@@ -237,19 +248,15 @@ public class MyEventsView extends VerticalLayout {
         rightInfo.setPadding(false);
         detailsRow.add(leftInfo, rightInfo);
 
-        // 3. Status Badge
         StatusBadge statusBadge = new StatusBadge(event.getStatut().getLabel(), event.getStatut().getColor());
 
-        // 4. Description courte
         Span descLabel = new Span("Description");
         descLabel.addClassName(LumoUtility.FontWeight.BOLD);
         Paragraph desc = new Paragraph(event.getDescription());
-        desc.getStyle().set("max-height", "150px");
-        desc.getStyle().set("overflow-y", "auto");
+        desc.getStyle().set("max-height", "150px").set("overflow-y", "auto");
 
         content.add(statusBadge, detailsRow, descLabel, desc);
 
-        // Footer avec bouton Fermer
         Button closeBtn = new Button("Fermer", e -> dialog.close());
         dialog.getFooter().add(closeBtn);
 
@@ -259,15 +266,12 @@ public class MyEventsView extends VerticalLayout {
 
     private HorizontalLayout createDetailItem(VaadinIcon icon, String text) {
         Icon i = icon.create();
-        i.setSize("18px");
+        i.setSize("16px");
         i.addClassName(LumoUtility.TextColor.SECONDARY);
         Span s = new Span(text);
-        s.addClassName(LumoUtility.FontSize.SMALL);
+        s.addClassNames(LumoUtility.FontSize.SMALL);
         return new HorizontalLayout(i, s);
     }
-
-    // ... (Le reste des méthodes getCurrentOrganizer, refreshGrid, updateList, handlers... reste inchangé) ...
-    // Assurez-vous d'avoir bien copié les méthodes handlePublish, handleCancel, handleDelete, showSuccess, showError et les utilitaires en bas de fichier.
 
     private User getCurrentOrganizer() {
         var userDetails = securityService.getAuthenticatedUser();

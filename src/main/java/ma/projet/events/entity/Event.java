@@ -92,25 +92,7 @@ public class Event {
     @ToString.Exclude // <--- ET CECI
     private List<Reservation> reservations = new ArrayList<>();
 
-    // ==================== SETTER PERSONNALISÉ POUR dateFin ====================
 
-    /*
-     * Setter personnalisé pour dateFin avec validation
-     * Remplace le setter généré par Lombok
-     */
-    /**
-    public void setDateFin(LocalDateTime dateFin) {
-        // Validation : dateFin doit être après dateDebut
-        if (dateFin != null && dateDebut != null) {
-            if (dateFin.isBefore(dateDebut) || dateFin.isEqual(dateDebut)) {
-                throw new IllegalArgumentException(
-                        "La date de fin doit être après la date de début"
-                );
-            }
-        }
-        this.dateFin = dateFin;
-    }
-     */
 
     // ==================== HOOKS ====================
 

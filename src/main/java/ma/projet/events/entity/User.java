@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "users") // "user" est un mot réservé SQL
+@Table(name = "users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -49,18 +49,18 @@ public class User {
     @Column(nullable = false)
     private Boolean actif = true;
 
-    private String telephone; // Optionnel
+    private String telephone;
 
     // ==================== RELATIONS ====================
 
     // Un utilisateur peut créer plusieurs événements (s'il est ORGANIZER)
     @OneToMany(mappedBy = "organisateur", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude // <--- ET CECI
+    @ToString.Exclude
     private List<Event> evenementsOrganises = new ArrayList<>();
 
     // Un utilisateur peut effectuer plusieurs réservations
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude // <--- ET CECI
+    @ToString.Exclude
     private List<Reservation> reservations = new ArrayList<>();
 
     // ==================== HOOKS ====================
@@ -77,7 +77,7 @@ public class User {
             actif = true;
         }
         if (role == null) {
-            role = Role.CLIENT; // Par défaut
+            role = Role.CLIENT;
         }
     }
 

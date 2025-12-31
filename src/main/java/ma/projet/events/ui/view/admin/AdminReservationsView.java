@@ -50,22 +50,34 @@ public class AdminReservationsView extends VerticalLayout {
         setSpacing(true);
         addClassName(LumoUtility.Background.BASE);
 
-        add(createHeader(), createToolbar(), createGrid());
+        add(createHeader(), createToolbar());
+
+        // Grid Wrapper
+        VerticalLayout gridWrapper = new VerticalLayout();
+        gridWrapper.addClassNames(LumoUtility.Background.BASE, LumoUtility.BoxShadow.SMALL, LumoUtility.BorderRadius.LARGE, LumoUtility.Overflow.HIDDEN);
+        gridWrapper.setPadding(false);
+        gridWrapper.setSizeFull();
+
+        grid = createGrid();
+        gridWrapper.add(grid);
+
+        add(gridWrapper);
+
         refreshData();
     }
 
     private Component createHeader() {
-        H2 title = new H2("Gestion Globale des Réservations");
+        H2 title = new H2("Supervision Réservations");
         title.addClassName(LumoUtility.Margin.NONE);
         return title;
     }
 
     private Component createToolbar() {
         searchField = new TextField();
-        searchField.setPlaceholder("Rechercher (Code, Client, Événement)...");
+        searchField.setPlaceholder("Rechercher (Code, Client, Event)...");
         searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
         searchField.setValueChangeMode(ValueChangeMode.LAZY);
-        searchField.setWidth("350px");
+        searchField.addClassName(LumoUtility.Flex.GROW);
         searchField.addValueChangeListener(e -> updateFilter());
 
         statusFilter = new ComboBox<>();
@@ -73,6 +85,7 @@ public class AdminReservationsView extends VerticalLayout {
         statusFilter.setItems(ReservationStatus.values());
         statusFilter.setItemLabelGenerator(ReservationStatus::getLabel);
         statusFilter.setClearButtonVisible(true);
+        statusFilter.setWidth("200px");
         statusFilter.addValueChangeListener(e -> updateFilter());
 
         Button refreshBtn = new Button(new Icon(VaadinIcon.REFRESH), e -> refreshData());
@@ -80,60 +93,29 @@ public class AdminReservationsView extends VerticalLayout {
 
         HorizontalLayout toolbar = new HorizontalLayout(searchField, statusFilter, refreshBtn);
         toolbar.setWidthFull();
+        toolbar.addClassName(LumoUtility.Margin.Bottom.SMALL);
         return toolbar;
     }
 
-    private Component createGrid() {
+    private Grid<Reservation> createGrid() {
         grid = new Grid<>(Reservation.class, false);
         grid.setSizeFull();
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_NO_BORDER);
 
-        // Colonnes
         grid.addColumn(Reservation::getCodeReservation).setHeader("Code").setAutoWidth(true).setSortable(true);
-
-        grid.addColumn(r -> r.getEvenement().getTitre())
-                .setHeader("Événement")
-                .setAutoWidth(true)
-                .setSortable(true)
-                .setFlexGrow(1);
-
-        grid.addColumn(r -> r.getUtilisateur().getNomComplet())
-                .setHeader("Client")
-                .setAutoWidth(true)
-                .setSortable(true);
-
-        grid.addColumn(r -> r.getEvenement().getOrganisateur().getNomComplet())
-                .setHeader("Organisateur") // Utile pour l'admin de voir qui organise
-                .setAutoWidth(true)
-                .setSortable(true);
-
-        grid.addColumn(r -> DateFormatter.format(r.getDateReservation()))
-                .setHeader("Date Commande")
-                .setAutoWidth(true)
-                .setSortable(true);
-
-        grid.addColumn(r -> PriceFormatter.format(r.getMontantTotal()))
-                .setHeader("Montant")
-                .setAutoWidth(true)
-                .setTextAlign(com.vaadin.flow.component.grid.ColumnTextAlign.END);
-
-        grid.addColumn(new ComponentRenderer<>(r ->
-                new StatusBadge(r.getStatut().getLabel(), r.getStatut().getColor())
-        )).setHeader("Statut").setAutoWidth(true);
-
-        // Pas d'actions d'édition/annulation pour l'instant pour l'admin (lecture seule globale),
-        // sauf demande spécifique. Le but ici est la supervision.
+        grid.addColumn(r -> r.getEvenement().getTitre()).setHeader("Événement").setAutoWidth(true).setSortable(true).setFlexGrow(1);
+        grid.addColumn(r -> r.getUtilisateur().getNomComplet()).setHeader("Client").setAutoWidth(true).setSortable(true);
+        grid.addColumn(r -> r.getEvenement().getOrganisateur().getNomComplet()).setHeader("Organisateur").setAutoWidth(true).setSortable(true);
+        grid.addColumn(r -> DateFormatter.format(r.getDateReservation())).setHeader("Date").setAutoWidth(true).setSortable(true);
+        grid.addColumn(r -> PriceFormatter.format(r.getMontantTotal())).setHeader("Montant").setAutoWidth(true).setTextAlign(com.vaadin.flow.component.grid.ColumnTextAlign.END);
+        grid.addColumn(new ComponentRenderer<>(r -> new StatusBadge(r.getStatut().getLabel(), r.getStatut().getColor()))).setHeader("Statut").setAutoWidth(true);
 
         return grid;
     }
 
     private void refreshData() {
-        // On récupère TOUT (null, null, null) grâce au filtre générique du service
         List<Reservation> allReservations = reservationService.getReservationsWithFilters(null, null, null);
-
-        // Tri par plus récent
         allReservations.sort(Comparator.comparing(Reservation::getId).reversed());
-
         dataView = grid.setItems(allReservations);
     }
 
